@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expertise Matrix v29.1</title>
+	<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .badge-hot { @apply bg-red-100 text-red-700 px-2 py-0.5 rounded-md text-[9px] font-black border border-red-200; }
+        .score-circle { @apply w-10 h-10 rounded-full flex items-center justify-center font-black text-xs border-4 transition-all; }
+        .score-high { border-color: #22c55e; color: #15803d; background: #f0fdf4; box-shadow: 0 0 15px rgba(34, 197, 94, 0.2); }
+        .score-med { border-color: #eab308; color: #a16207; background: #fefce8; }
+        .score-low { border-color: #94a3b8; color: #475569; background: #f8fafc; }
+        .row-lookalike { background-color: #f0fdf4 !important; border-left: 6px solid #22c55e !important; }
+        .entry-point { @apply mt-2 p-3 bg-blue-50 border-l-4 border-blue-500 rounded-r-xl text-blue-900 text-[11px] font-medium italic; }
+        .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px); }
+        .details-box { display: none; @apply mt-3 p-4 bg-slate-50 rounded-2xl text-slate-600 text-[10px] border border-slate-100 italic leading-relaxed; }
+        .details-box.open { display: block; }
+        .ms-high { @apply text-purple-700 font-black; }
+        .ms-mid { @apply text-blue-600 font-bold; }
+        .ms-low { @apply text-slate-400 font-medium; }
+
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white; padding: 0; }
+            table { font-size: 8px; border-collapse: collapse; }
+            th, td { border: 1px solid #e2e8f0 !important; padding: 3px !important; }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 font-sans p-4 md:p-8">
+
+    <div class="max-w-full mx-auto">
+        <header class="mb-10 border-b-2 border-slate-200 pb-8 flex flex-col md:flex-row justify-between items-center gap-6 no-print">
+            <div>
+                <h1 class="text-4xl font-black uppercase tracking-tighter italic text-blue-900">Expertise Matrix</h1>
+                <p class="text-slate-500 mt-1 uppercase text-[10px] font-bold tracking-widest italic">Leads analysis • v29.1 </p>
+            </div>
+            <div class="flex flex-col md:items-end gap-3">
+                <div class="flex gap-2">
+					<button onclick="exportToExcel()" class="bg-blue-500 hover:bg-blue-600 text-white font-black py-2 px-6 rounded-xl text-[10px] shadow-lg">EXPORT EXCEL (CSV)</button>
+                    <button onclick="window.print()" class="bg-slate-800 hover:bg-black text-white font-black py-2 px-6 rounded-xl text-[10px] shadow-lg">PRINT PDF</button>
+                    <button onclick="openModalForAdd()" class="bg-blue-600 hover:bg-blue-700 text-white font-black py-2 px-6 rounded-xl text-[10px] shadow-lg">+ NEW LEAD</button>
+                </div>
+                <div class="flex flex-col items-end">
+                    <label class="text-[9px] font-black text-slate-400 uppercase mb-1 italic">Look-alike Baseline (Priority Sorting):</label>
+                    <select id="lookalikeSelect" onchange="runLookalike()" class="p-3 bg-white border-2 border-blue-100 rounded-2xl text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500 min-w-[300px]">
+                        <option value="none"> Select Company for SSM </option>
+                    </select>
+                </div>
+            </div>
+        </header>
+
+        <details class="mb-8 bg-white rounded-[2rem] border border-blue-100 shadow-sm overflow-hidden group no-print" open>
+    <summary class="flex items-center justify-between p-6 cursor-pointer list-none hover:bg-slate-50 transition-all">
+        <div class="flex items-center gap-3">
+            <div class="bg-blue-900 text-white p-2 rounded-xl">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            </div>
+            <h3 class="text-sm font-black uppercase tracking-widest text-blue-900 italic">Strategic Methodology & Legend</h3>
+        </div>
+        <span class="text-blue-900 transition-transform group-open:rotate-180">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+        </span>
+    </summary>
+
+    <div class="p-8 pt-0 grid grid-cols-1 md:grid-cols-3 gap-8 border-t border-slate-50">
+        <div>
+            <h4 class="text-[11px] font-black uppercase text-blue-900 mb-4 tracking-tighter italic">Sim % Methodology</h4>
+            <div class="bg-slate-50 p-4 rounded-2xl text-[10px] font-bold text-slate-700 space-y-1.5 italic">
+                <div class="flex justify-between"><span>SW Strategy Match (Buy SW)</span><span class="text-blue-600">+40%</span></div>
+                <div class="flex justify-between border-t border-slate-200 pt-1.5 bg-blue-50/50"><span>Business Model Identical (HW/SW/Hybrid)</span><span class="text-blue-600">+30%</span></div>
+                <div class="flex justify-between border-t border-slate-200 pt-1.5"><span>Ecosystem Role</span><span class="text-blue-600">+15%</span></div>
+                <div class="flex justify-between border-t border-slate-200 pt-1.5"><span>Market Share Alignment</span><span class="text-blue-600">+10%</span></div>
+                <div class="flex justify-between border-t border-slate-200 pt-1.5"><span>Technical Domain Overlap</span><span class="text-blue-600">+5%</span></div>
+            </div>
+        </div>
+
+        <div>
+    <h4 class="text-[11px] font-black uppercase text-emerald-900 mb-4 tracking-tighter italic">Maturity Level Index</h4>
+    <div class="space-y-4 text-[10px] leading-relaxed">
+        <div class="flex flex-col gap-1">
+            <span class="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded font-black h-fit w-fit uppercase">Low (Turnkey Seeker)</span> 
+            <span class="italic text-slate-600"><b>High Opportunity.</b> Focus on core hardware with limited internal SW R&D. Prefers ready-to-use external solutions.</span>
+        </div>
+        <div class="flex flex-col gap-1">
+            <span class="bg-amber-100 text-amber-700 px-2 py-0.5 rounded font-black h-fit w-fit uppercase">Med (Strategic Partner)</span> 
+            <span class="italic text-slate-600"><b>Hybrid setup.</b> Established internal IT, but open to best-of-breed specialized modules via API integration.</span>
+        </div>
+        <div class="flex flex-col gap-1">
+            <span class="bg-slate-200 text-slate-700 px-2 py-0.5 rounded font-black h-fit w-fit uppercase">High (Innovation Driven)</span> 
+            <span class="italic text-slate-600"><b>Complex Entry.</b> Sophisticated in-house engineering. Only open to highly unique or niche value propositions.</span>
+        </div>
+    </div>
+</div>
+
+        <div>
+            <h4 class="text-[11px] font-black uppercase text-purple-900 mb-4 tracking-tighter italic">Ecosystem Role Map</h4>
+            <div class="space-y-2 text-[10px] font-medium text-slate-600 italic">
+                <p><b>OEM:</b> Asset manufacturers (trailers, wagons, reefers).</p>
+                <p><b>SaaS/Platform:</b> Central fleet software & operational hubs.</p>
+                <p><b>Tech Partner:</b> Connectivity & IoT hardware/software bridges.</p>
+                <p><b>Consumer:</b> Major asset owners & logistics giants (Maersk, FedEx).</p>
+            </div>
+        </div>
+    </div>
+</details>
+
+        <div class="mb-8 grid grid-cols-1 md:grid-cols-5 gap-4 bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200 items-end no-print">
+            <div>
+                <label class="block text-[10px] font-black text-slate-400 uppercase mb-3 italic">Region:</label>
+                <select id="regFilter" onchange="render()" class="w-full p-3 bg-slate-50 border-none rounded-xl text-xs font-bold outline-none">
+                   <option value="all">Global (All)</option>
+					<option value="EMEA">EMEA</option>
+					<option value="AMER">AMER</option> <option value="APAC">APAC</option>
+					<option value="GLOBAL">GLOBAL</option>
+</select>
+            </div>
+            <div>
+                <label class="block text-[10px] font-black text-emerald-600 uppercase mb-3 italic">Maturity Level:</label>
+                <select id="matFilter" onchange="render()" class="w-full p-3 bg-emerald-50 border-none rounded-xl text-xs font-black text-emerald-800 outline-none">
+                    <option value="all">Any Maturity</option>
+                    <option value="Low">Low</option>
+                    <option value="Med">Medium</option>
+                    <option value="High">High</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-[10px] font-black text-purple-600 uppercase mb-3 italic">Market Share:</label>
+                <select id="shareFilter" onchange="render()" class="w-full p-3 bg-purple-50 border-none rounded-xl text-xs font-black text-purple-800 outline-none">
+                    <option value="all">All Share Levels</option>
+                    <option value="High">"High Share (More than $10B)"</option>
+                    <option value="Mid">"Medium Share ($1-10B)"</option>
+                    <option value="Low">"Low Share (Up to $1B)"</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-[10px] font-black text-blue-600 uppercase mb-3 italic">Ecosystem Role:</label>
+                <select id="roleFilter" onchange="render()" class="w-full p-3 bg-blue-50 border-none rounded-xl text-xs font-black text-blue-800 outline-none">
+                    <option value="all">All Roles</option>
+                    <option value="OEM">OEM</option>
+                    <option value="SaaS/Platform">SaaS Platform</option>
+                    <option value="Tech Partner">Tech Partner</option>
+                    <option value="Consumer">Consumer</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-[10px] font-black text-slate-400 uppercase mb-3 italic underline">Expertise Match:</label>
+                <select id="expFilter" onchange="render()" class="w-full p-3 bg-slate-800 border-none rounded-xl text-[10px] font-bold text-white outline-none">
+                    <option value="all">--- Select Match ---</option>
+                    <option value="Fleet Management Solutions">Fleet Management</option>
+                    <option value="Asset management">Asset Management</option>
+                    <option value="Compliance & Regulations">Compliance</option>
+                    <option value="Fleet Operations Management">Operations</option>
+                    <option value="Software Integration">Integration</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="mb-4 flex justify-end no-print px-4">
+            <span id="counter" class="text-[10px] font-black text-blue-600 bg-blue-50 px-4 py-2 rounded-full border border-blue-200 uppercase tracking-widest italic">Active Leads: 82</span>
+        </div>
+
+        <div class="bg-white rounded-[2.5rem] shadow-2xl border border-slate-200 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-slate-900 text-slate-400 uppercase text-[9px] font-black tracking-widest">
+                        <tr>
+                            <th class="p-6">Company Intelligence</th>
+                            <th class="p-4 text-center">Sim %</th>
+                            <th class="p-4 text-center">Share</th>
+                            <th class="p-4 text-center">SW Strategy</th>
+                            <th class="p-4">Signals</th>
+                            <th class="p-6">Industry Focus</th>
+                            <th class="p-6">Strategic Match</th>
+                            <th class="p-6 text-center no-print">Edit</th>
+                        </tr>
+                    </thead>
+                    <tbody id="matrixBody" class="divide-y divide-slate-100 font-medium text-sm"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+<div id="companyModal" class="modal items-center justify-center p-4">
+    <div class="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-2xl overflow-hidden text-left">
+        <div class="bg-slate-900 p-6 text-white flex justify-between items-center">
+            <h2 id="modalTitle" class="font-black uppercase italic">Strategic Intelligence</h2>
+            <button onclick="closeModal()" type="button" class="text-slate-400 text-3xl hover:text-white">&times;</button>
+        </div>
+        <form id="companyForm" class="p-10 space-y-4 max-h-[80vh] overflow-y-auto">
+            <input type="hidden" id="editIndex">
+            <div class="p-4 bg-blue-50 rounded-2xl border-2 border-blue-100 mb-6">
+				<label class="text-[9px] font-black uppercase text-blue-600 ml-2 italic">Auto-Intelligence (Enter URL to crawl)</label>
+			<div class="flex gap-2 mt-1">
+				<input type="url" id="crawlUrl" placeholder="https://www.example.com" class="flex-1 p-3 bg-white border rounded-xl text-xs outline-none focus:ring-2 focus:ring-blue-500">
+				<button type="button" onclick="crawlAndFill()" id="crawlBtn" class="bg-blue-600 text-white font-black px-4 py-2 rounded-xl text-[10px] hover:bg-blue-700 transition-all flex items-center gap-2">
+				<span id="crawlIcon">⚡</span> FETCH DATA
+					</button>
+					</div>
+				<p class="text-[8px] text-blue-400 mt-2 ml-2 italic leading-tight">* Powered by Jina AI Reader. Fetches "About Us" content and maps it to the matrix fields.</p>
+			</div>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="space-y-1">
+                    <label class="text-[9px] font-black uppercase text-slate-400 ml-2">Company Name</label>
+                    <input type="text" id="formName" required class="w-full p-4 bg-slate-50 border rounded-2xl outline-none">
+                </div>
+                <div class="space-y-1">
+                    <label class="text-[9px] font-black uppercase text-slate-400 ml-2">Website URL</label>
+                    <input type="url" id="formUrl" class="w-full p-4 bg-slate-50 border rounded-2xl outline-none">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div class="space-y-1">
+                    <label class="text-[9px] font-black uppercase text-slate-400 ml-2 italic">Business Model (+30% Sim)</label>
+                    <select id="formType" class="w-full p-4 bg-slate-50 border rounded-2xl text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="Manufactures HW">Manufactures HW</option>
+                        <option value="SaaS/Platform">SaaS / Platform</option>
+                        <option value="Hybrid Model">Hybrid Model</option>
+                    </select>
+                </div>
+                <div class="space-y-1">
+                    <label class="text-[9px] font-black uppercase text-slate-400 ml-2">Market Share Index</label>
+                    <select id="formShare" class="w-full p-4 bg-slate-50 border rounded-2xl text-xs font-bold outline-none">
+                        <option value="High">High Share (+$10B)</option>
+                        <option value="Mid">Mid Share ($1-10B)</option>
+                        <option value="Low">Low Share (-$1B)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div class="space-y-1">
+                    <label class="text-[9px] font-black uppercase text-slate-400 ml-2">Region</label>
+                    <select id="formReg" class="w-full p-4 bg-slate-50 border rounded-2xl text-xs font-bold outline-none"><option value="GLOBAL">GLOBAL</option><option value="EMEA">EMEA</option><option value="AMER">AMER</option><option value="APAC">APAC</option></select>
+                </div>
+                <div class="space-y-1">
+                    <label class="text-[9px] font-black uppercase text-slate-400 ml-2">Ecosystem Role</label>
+                    <select id="formRole" class="w-full p-4 bg-slate-50 border rounded-2xl text-xs font-bold outline-none"><option value="OEM">Role: OEM</option><option value="SaaS/Platform">Role: SaaS</option><option value="Tech Partner">Role: Tech</option><option value="Consumer">Role: Consumer</option></select>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div class="space-y-1">
+                    <label class="text-[9px] font-black uppercase text-slate-400 ml-2 italic">Internal R&D</label>
+                    <select id="formOwn" class="w-full p-4 bg-slate-50 border rounded-2xl text-xs font-bold"><option value="No">Own SW: No</option><option value="Yes">Own SW: Yes</option></select>
+                </div>
+                <div class="space-y-1">
+                    <label class="text-[9px] font-black uppercase text-slate-400 ml-2 italic">External Strategy</label>
+                    <select id="formBuy" class="w-full p-4 bg-slate-50 border rounded-2xl text-xs font-bold"><option value="No">Buy SW: No</option><option value="Yes">Buy SW: Yes</option></select>
+                </div>
+            </div>
+
+            <select id="formMat" class="w-full p-4 bg-slate-50 border rounded-2xl text-xs font-bold"><option value="Low">Maturity: Low</option><option value="Med">Maturity: Med</option><option value="High">Maturity: High</option></select>
+
+            <div class="space-y-1">
+                <div class="flex justify-between items-center ml-2">
+                    <label class="text-[9px] font-black uppercase text-blue-400">Expertise Match</label>
+                    <button type="button" onclick="autoDetectExpertise()" class="text-[9px] font-black bg-blue-600 text-white px-2 py-1 rounded">✨ AUTO-DETECT</button>
+                </div>
+                <input type="text" id="formExp" class="w-full p-4 bg-blue-50 border border-blue-100 rounded-2xl font-bold text-blue-900 text-xs">
+            </div>
+
+            <div class="space-y-1">
+                <label class="text-[9px] font-black uppercase text-slate-400 ml-2">Focus & Entry</label>
+                <input type="text" id="formCore" placeholder="Domains" class="w-full p-4 bg-slate-50 border rounded-2xl text-xs mb-2">
+                <input type="text" id="formEntryPoint" placeholder="Hook" class="w-full p-4 bg-slate-50 border rounded-2xl text-xs">
+            </div>
+
+            <textarea id="formDesc" rows="3" placeholder="Description" class="w-full p-4 bg-slate-50 border rounded-2xl text-xs"></textarea>
+            
+            <div class="flex gap-4 pt-4">
+                <button type="submit" class="flex-1 bg-slate-900 text-white font-black py-5 rounded-2xl shadow-xl hover:bg-black transition-all">SAVE UPDATES</button>
+                <button type="button" onclick="deleteCompany()" id="deleteBtn" class="px-8 bg-red-50 text-red-600 font-bold rounded-2xl">DELETE</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<footer class="mt-16 border-t border-slate-200 pt-10 pb-14 no-print bg-slate-50/50">
+    <div class="max-w-full flex flex-col md:flex-row justify-between items-start gap-8 px-6">
+        
+        <div class="text-left md:w-1/4">
+            <h4 class="text-xs font-black uppercase tracking-widest text-slate-400 italic">Project Meta</h4>
+            <p class="text-[10px] text-slate-500 font-medium mt-2 uppercase leading-relaxed">Expertise Mapping Tool<br>Version 29.1 (Stable Build)</p>
+            <div class="mt-4 text-[9px] font-black text-slate-300 uppercase italic">Ref: LOG-MATRIX-2026-Q1</div>
+        </div>
+
+        <div class="bg-white border-2 border-blue-100/80 p-8 rounded-[2rem] shadow-md md:w-2/4 text-center md:text-left hover:shadow-lg transition-all">
+            <div class="flex items-center gap-4 mb-4 justify-center md:justify-start">
+                <div class="bg-gradient-to-br from-blue-500 to-purple-600 text-white p-2 rounded-xl shadow-inner">
+                   <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2L14.4 8.4L20.8 10.8L14.4 13.2L12 19.6L9.6 13.2L3.2 10.8L9.6 8.4L12 2Z" fill="currentColor"/>
+                    </svg>
+                </div>
+                <div>
+                    <span class="text-xs font-black uppercase tracking-widest text-blue-900 italic block leading-none">AI Co-Creation Transparency</span>
+                    <span class="text-[9px] font-bold text-purple-600 uppercase tracking-wider italic">Powered by Gemini (Google AI)</span>
+                </div>
+            </div>
+            <p class="text-xs leading-relaxed text-slate-600 italic">
+                This strategic tool is the result of a collaborative effort between human intelligence and advanced AI. 
+                <b>Strategic vision, business methodology, and analytical requirements</b> were defined by the Product Owner. 
+                <b>Technical code implementation, data structure, and algorithm calibration</b> were executed in partnership with <b>Gemini</b>.
+            </p>
+        </div>
+
+        <div class="text-right flex flex-col items-center md:items-end md:w-1/4">
+             <div class="mt-2 text-[10px] font-bold text-slate-500 uppercase leading-relaxed">
+                <br>© 2026 All Rights Reserved
+            </div>
+             <p class="mt-4 text-[9px] text-slate-400 italic">For internal use only.</p>
+        </div>
+    </div>
+</footer>
+
+    <script>
+// 1. Ініціалізація (ЛИШЕ ОДИН РАЗ)
+    const SB_URL = 'https://eurhcxjqapmgpiaqdciu.supabase.co'; 
+    const SB_KEY = 'sb_publishable_lRTxziDxvYvLzEjaiTvHqA_5Ox0rOht';
+    const sb = window.supabase.createClient('https://eurhcxjqapmgpiaqdciu.supabase.co', 'sb_publishable_lRTxziDxvYvLzEjaiTvHqA_5Ox0rOht');   
+
+    let companies = [];
+    let currentLookalike = "none";
+
+    // 2. Ваша функція завантаження (адаптована під хмару)
+    async function loadDatabase() {
+        const { data, error } = await sb
+            .from('companies')
+            .select('*')
+            .order('n', { ascending: true });
+
+        if (!error && data) {
+            companies = data;
+            render();
+            populateDropdown();
+        }
+    }
+
+    async function init() {
+        await loadDatabase();
+    }
+
+    function populateDropdown() {
+        const select = document.getElementById('lookalikeSelect');
+        const currentVal = select.value;
+        select.innerHTML = '<option value="none"> FIND LOOK-ALIKE </option>';
+        companies.map(c => c.n).sort().forEach(name => {
+            const opt = document.createElement('option');
+            opt.value = name; opt.innerText = name;
+            select.appendChild(opt);
+        });
+        select.value = currentVal;
+    }
+
+        function populateDropdown() {
+            const select = document.getElementById('lookalikeSelect');
+            const currentVal = select.value;
+            select.innerHTML = '<option value="none"> FIND LOOK-ALIKE </option>';
+            companies.map(c => c.n).sort().forEach(name => {
+                const opt = document.createElement('option');
+                opt.value = name; opt.innerText = name;
+                select.appendChild(opt);
+            });
+            select.value = currentVal;
+        }
+
+        function runLookalike() {
+            currentLookalike = document.getElementById('lookalikeSelect');
+            if (currentLookalike) {
+                currentLookalike = currentLookalike.value;
+            } else {
+                currentLookalike = "none";
+            }
+            render();
+        }
+
+        function getSimilarity(co, base) {
+            if (!base) return 0;
+            if (co.n === base.n) return -1;
+            let score = 0;
+            // 1. SW Strategy Match (40%)
+            if (co.b === base.b) score += 40; 
+            // 2. Business Model Match (30%)
+            if (co.t === base.t) score += 30; 
+            // 3. Ecosystem Role & Market Share (25%)
+            if (co.er === base.er) score += 15;
+            if (co.ms === base.ms) score += 10;
+            // 4. Domain Alignment (5%)
+            if (co.c.split(',')[0].trim() === base.c.split(',')[0].trim()) score += 5;
+            return score;
+        }
+
+        function openModalForAdd() {
+            document.getElementById('editIndex').value = "-1";
+            document.getElementById('companyForm').reset();
+            document.getElementById('deleteBtn').style.display = 'none';
+            document.getElementById('modalTitle').innerText = "Add Global Target";
+            document.getElementById('companyModal').style.display = 'flex';
+        }
+
+        function openModalForEdit(originalIdx) {
+            const co = companies[originalIdx];
+            if (!co) return;
+
+            document.getElementById('companyForm').reset();
+            
+            document.getElementById('editIndex').value = originalIdx;
+            document.getElementById('formName').value = co.n || "";
+            document.getElementById('formUrl').value = co.u || "";
+            document.getElementById('formShare').value = co.ms || "Mid";
+            document.getElementById('formReg').value = co.r || "EMEA";
+            document.getElementById('formRole').value = co.er || "OEM";
+            document.getElementById('formMat').value = co.m || "Low";
+            
+            // Заповнення Business Model
+            document.getElementById('formType').value = co.t || "SaaS/Platform";
+            
+            document.getElementById('formOwn').value = co.o || "No";
+            document.getElementById('formBuy').value = co.b || "No";
+            
+            document.getElementById('formExp').value = (co.exp || []).join(', ');
+            document.getElementById('formCore').value = co.c || "";
+            document.getElementById('formEntryPoint').value = co.ep || "";
+            document.getElementById('formDesc').value = co.d || "";
+            
+            document.getElementById('deleteBtn').style.display = 'block';
+            document.getElementById('modalTitle').innerText = "Edit Intelligence: " + co.n;
+            document.getElementById('companyModal').style.display = 'flex';
+        }
+
+        function closeModal() { document.getElementById('companyModal').style.display = 'none'; }
+
+        document.getElementById('companyForm').onsubmit = (e) => {
+            e.preventDefault();
+            const idx = parseInt(document.getElementById('editIndex').value);
+            
+            const co = {
+                n: document.getElementById('formName').value,
+                u: document.getElementById('formUrl').value || "#",
+                // Збереження Business Model з форми (без заглушок)
+                t: document.getElementById('formType').value,
+                r: document.getElementById('formReg').value,
+                er: document.getElementById('formRole').value,
+                ms: document.getElementById('formShare').value,
+                m: document.getElementById('formMat').value,
+                o: document.getElementById('formOwn').value,
+                b: document.getElementById('formBuy').value,
+                c: document.getElementById('formCore').value,
+                ep: document.getElementById('formEntryPoint').value,
+                exp: document.getElementById('formExp').value.split(',').map(s => s.trim()).filter(s => s !== ""),
+                d: document.getElementById('formDesc').value,
+                sig: "Warm"
+            };
+
+            if (idx === -1) {
+                companies.push(co);
+                populateDropdown();
+            } else {
+                companies[idx] = co;
+            }
+
+            saveDatabase();
+            render();
+            closeModal();
+        };
+
+        function deleteCompany() {
+            const idx = parseInt(document.getElementById('editIndex').value);
+            if (confirm("Permanently delete lead?")) {
+                companies.splice(idx, 1);
+                saveDatabase(); populateDropdown(); render(); closeModal();
+            }
+        }
+
+        function render() {
+            const body = document.getElementById('matrixBody');
+            const fReg = document.getElementById('regFilter').value;
+            const fMat = document.getElementById('matFilter').value;
+            const fRole = document.getElementById('roleFilter').value;
+            const fShare = document.getElementById('shareFilter').value;
+            const fExp = document.getElementById('expFilter').value;
+
+            const baseCo = currentLookalike !== "none" ? companies.find(c => c.n === currentLookalike) : null;
+            
+            let data = companies.map((co, originalIdx) => {
+                const rM = fReg === 'all' || co.r === fReg;
+                const mM = fMat === 'all' || co.m === fMat;
+                const roleMatch = fRole === 'all' || (co.er || "").includes(fRole);
+                const shareMatch = fShare === 'all' || co.ms === fShare;
+                return { ...co, originalIdx, visible: rM && mM && roleMatch && shareMatch, ssm: getSimilarity(co, baseCo) };
+            });
+
+            data.sort((a, b) => b.ssm - a.ssm);
+
+            body.innerHTML = '';
+            let count = 0;
+
+            data.forEach((co) => {
+                if (!co.visible) return;
+                count++;
+                const expMatch = fExp === 'all' || (co.exp || []).includes(fExp);
+                const row = document.createElement('tr');
+                const s = co.ssm;
+                const scoreClass = s >= 70 ? 'score-high' : s >= 20 ? 'score-med' : 'score-low';
+                const msClass = co.ms === 'High' ? 'ms-high' : co.ms === 'Mid' ? 'ms-mid' : 'ms-low';
+                
+                row.className = `group hover:bg-slate-50 transition-all ${expMatch ? '' : 'opacity-20 grayscale'} ${s >= 70 ? 'row-lookalike' : ''}`;
+                row.innerHTML = `
+                    <td class="p-6">
+                        <a href="${co.u}" target="_blank" class="text-base font-black uppercase tracking-tighter text-slate-800 hover:text-blue-600 transition-all italic underline decoration-slate-200 decoration-2 underline-offset-4">
+                            ${co.n}
+                        </a>
+                        <div class="flex flex-col gap-1 mt-1">
+                            <div class="flex items-center gap-2">
+                                <span class="text-[9px] font-black px-2 py-0.5 bg-slate-100 text-slate-500 rounded uppercase border border-slate-200">${co.er || 'SaaS'}</span>
+                                <span class="text-[9px] text-slate-400 font-bold uppercase tracking-widest">${co.r}</span>
+                            </div>
+                            <span class="text-[9px] font-bold text-slate-400 italic tracking-tight uppercase">${co.t}</span>
+                        </div>
+                        <button onclick="toggleDetails(${co.originalIdx})" class="mt-2 text-[9px] text-blue-500 font-black uppercase hover:underline no-print">Summary & Relationships</button>
+                        <div id="details-${co.originalIdx}" class="details-box">${co.d}</div>
+                    </td>
+                    <td class="p-4">
+                        <div class="flex justify-center">
+                            <div class="score-circle ${scoreClass}">${s === -1 ? 'BASE' : s + '%'}</div>
+                        </div>
+                    </td>
+                    <td class="p-4 text-center">
+                        <span class="text-[10px] uppercase font-black ${msClass}">${co.ms || 'Mid'}</span>
+                    </td>
+                    <td class="p-4 text-center">
+						<div class="text-[10px] font-black ${co.o === 'Yes' ? 'text-blue-600' : 'text-slate-300'}">OWN: ${co.o === 'Yes' ? '✓' : '×'}</div>
+						<div class="text-[10px] font-black ${co.b === 'Yes' ? 'text-emerald-600' : 'text-slate-300'}">BUY: ${co.b === 'Yes' ? '✓' : '×'}</div>
+					</td>
+                    <td class="p-4">
+                        <div class="flex flex-col gap-1">
+                            <span class="${co.sig === 'Hot' ? 'badge-hot' : 'bg-amber-100 text-amber-700 px-2 py-0.5 rounded-md text-[9px] font-black'} uppercase tracking-tighter">${co.sig}</span>
+                            <span class="text-[9px] font-black text-slate-400 uppercase italic">Mat: ${co.m}</span>
+                        </div>
+                    </td>
+                    <td class="p-6"><div class="text-xs font-bold text-blue-900 uppercase italic leading-tight">${co.c}</div></td>
+                    <td class="p-6">
+                        <div class="text-[10px] font-black text-emerald-800 leading-relaxed">${(co.exp || []).join(' • ')}</div>
+                        <div class="entry-point">" ${co.ep} "</div>
+                    </td>
+                    <td class="p-6 text-center no-print">
+                        <button onclick="openModalForEdit(${co.originalIdx})" class="p-3 bg-white border border-slate-200 rounded-2xl shadow-sm group-hover:bg-slate-900 group-hover:text-white transition-all">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                        </button>
+                    </td>
+                `;
+                body.appendChild(row);
+            });
+            document.getElementById('counter').innerText = `Inventory: ${count} Verified Companies`;
+        }
+
+        function toggleDetails(idx) { document.getElementById(`details-${idx}`).classList.toggle('open'); }
+		
+		function autoDetectExpertise() {
+            const desc = document.getElementById('formDesc').value.toLowerCase();
+            const domains = document.getElementById('formCore').value.toLowerCase();
+            const fullText = desc + " " + domains;
+            
+            const mapping = {
+                "Fleet Management Solutions": ["gps", "tracking", "telematics", "fleet", "visibility", "routing", "fms"],
+                "Asset management": ["container", "trailer", "wagon", "asset", "inventory", "reefer", "hub", "warehouse"],
+                "Compliance & Regulations": ["eld", "compliance", "regulation", "legal", "gdp", "tachograph", "hos", "security"],
+                "Fleet Operations Management": ["workflow", "efficiency", "optimization", "driver", "dispatch", "operations", "tms"],
+                "Software Integration": ["api", "erp", "integration", "platform", "partner", "connection", "data flow", "orchestration"]
+            };
+
+            let detected = [];
+
+            for (const [expertise, keywords] of Object.entries(mapping)) {
+                if (keywords.some(word => fullText.includes(word))) {
+                    detected.push(expertise);
+                }
+            }
+
+            if (detected.length === 0 && document.getElementById('formRole').value === "OEM") {
+                detected.push("Software Integration");
+            }
+
+            document.getElementById('formExp').value = detected.join(', ');
+        }
+
+	function exportToExcel() {
+    // 1. Визначаємо заголовки стовпців
+    const headers = [
+        "Company Name", "URL", "Region", "Ecosystem Role", "Business Model", "Market Share", 
+        "Maturity", "Own SW", "Buy SW", "Industry Focus", "Strategic Hook", 
+        "Expertise Match", "Summary & Relationships"
+    ];
+
+    // 2. Готуємо дані
+    const rows = companies.map(co => [
+        `"${co.n}"`,                          // Name
+        `"${co.u}"`,                          // URL
+        `"${co.r}"`,                          // Region
+        `"${co.er}"`,                         // Role
+        `"${co.t}"`,                          // Business Model
+        `"${co.ms}"`,                         // Market Share
+        `"${co.m}"`,                          // Maturity
+        `"${co.o}"`,                          // Own SW
+        `"${co.b}"`,                          // Buy SW
+        `"${co.c.replace(/"/g, '""')}"`,      // Focus Domains
+        `"${co.ep.replace(/"/g, '""')}"`,     // Entry Point
+        `"${(co.exp || []).join(', ')}"`,     // Expertise Match
+        `"${co.d.replace(/"/g, '""')}"`       // Description (Relationships)
+    ]);
+
+    // 3. Формуємо фінальний CSV рядок
+    // Додаємо "\uFEFF" для кирилиці ТА "sep=;\n" для автоматичного розділення стовпців в Excel
+    const csvContent = "\uFEFF" + "sep=;\n" + [headers.join(";"), ...rows.map(e => e.join(";"))].join("\n");
+
+    // 4. Створюємо лінк для завантаження
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "Expertise_Matrix_Report_" + new Date().toISOString().slice(0,10) + ".csv");
+    document.body.appendChild(link);
+    
+    link.click();
+    document.body.removeChild(link);
+}
+
+async function crawlAndFill() {
+    const url = document.getElementById('crawlUrl').value;
+    const btn = document.getElementById('crawlBtn');
+    const icon = document.getElementById('crawlIcon');
+
+    if (!url) {
+        alert("Please enter a valid URL first.");
+        return;
+    }
+
+    // Візуальна індикація завантаження
+    btn.disabled = true;
+    btn.classList.add('opacity-50');
+    icon.innerText = "⏳";
+
+    try {
+        // Використовуємо r.jina.ai для обходу CORS та отримання чистого тексту
+        const response = await fetch(`https://r.jina.ai/${url}`);
+        const text = await response.text();
+        
+        if (text) {
+            smartFillFromText(text, url);
+        }
+    } catch (error) {
+        console.error("Crawling failed:", error);
+        alert("Failed to fetch data. This site might be blocking crawlers.");
+    } finally {
+        btn.disabled = false;
+        btn.classList.remove('opacity-50');
+        icon.innerText = "⚡";
+    }
+}
+
+function smartFillFromText(text, url) {
+    // 1. Очищення назви (прибираємо "Title: " та зайві символи)
+    let title = "";
+    const titleMatch = text.match(/^Title:\s*(.*)/i) || text.match(/^#\s+(.*)/) || text.match(/^([^\n|]+)/);
+    if (titleMatch) {
+        title = titleMatch[1].split('|')[0].split('-')[0].replace(/Title:/gi, '').trim();
+        document.getElementById('formName').value = title;
+    }
+    
+    const lowText = text.toLowerCase();
+    document.getElementById('formUrl').value = url;
+
+    // 2. Розумний опис (шукаємо змістовний текст, пропускаючи заголовки)
+    const lines = text.split('\n').filter(l => l.trim().length > 40 && !l.startsWith('!'));
+    const cleanDesc = lines.length > 0 ? lines[0].replace(/[#*\[\]]/g, '').trim().substring(0, 400) + "..." : "No clear description found.";
+    document.getElementById('formDesc').value = cleanDesc;
+
+    // 3. Визначення Business Model (Більш жорсткі умови для HW)
+    const hwKeywords = ["trailer", "semi-trailer", "axle", "cooling unit", "hardware", "manufacturer", "production", "factory", "equipment"];
+    const swKeywords = ["saas", "platform", "cloud", "software-as-a-service", "open api"];
+
+    if (hwKeywords.some(word => lowText.includes(word))) {
+        document.getElementById('formType').value = "Manufactures HW";
+    } else if (swKeywords.some(word => lowText.includes(word))) {
+        document.getElementById('formType').value = "SaaS/Platform";
+    }
+
+    // 4. Визначення Ecosystem Role
+    if (lowText.includes("oem") || lowText.includes("manufacturer") || lowText.includes("leading producer")) {
+        document.getElementById('formRole').value = "OEM";
+    } else if (lowText.includes("logistics") || lowText.includes("shipping") || lowText.includes("carrier")) {
+        document.getElementById('formRole').value = "Consumer";
+    }
+
+    // 5. Регіон (EMEA за замовчуванням для європейських доменів)
+    if (url.includes('.de') || url.includes('.pl') || url.includes('.eu') || lowText.includes("europe")) {
+        document.getElementById('formReg').value = "EMEA";
+    }
+
+    // Запускаємо автовизначення експертиз на основі вже кращого тексту
+    autoDetectExpertise(); 
+    document.getElementById('formName').focus();
+}
+
+	    init();
+	
+    </script>
+</body>
+</html>
