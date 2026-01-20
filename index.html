@@ -327,17 +327,20 @@
 
     // 2. Ваша функція завантаження (адаптована під хмару)
     async function loadDatabase() {
-        const { data, error } = await sb
-            .from('companies')
-            .select('*')
-            .order('n', { ascending: true });
+    console.log("📡 Синхронізація з Supabase...");
+    const { data, error } = await sb
+        .from('companies')
+        .select('*')
+        .order('n', { ascending: true });
 
-        if (!error && data) {
-            companies = data;
-            render();
-            populateDropdown();
-        }
+    if (!error && data) {
+        companies = data;
+        render(); // Малюємо таблицю
+        populateDropdown(); // Оновлюємо випадаючий список
+    } else if (error) {
+        console.error("Download error:", error.message);
     }
+}
 
     async function init() {
         await loadDatabase();
@@ -433,47 +436,61 @@
 
         function closeModal() { document.getElementById('companyModal').style.display = 'none'; }
 
-        document.getElementById('companyForm').onsubmit = (e) => {
-            e.preventDefault();
-            const idx = parseInt(document.getElementById('editIndex').value);
-            
-            const co = {
-                n: document.getElementById('formName').value,
-                u: document.getElementById('formUrl').value || "#",
-                // Збереження Business Model з форми (без заглушок)
-                t: document.getElementById('formType').value,
-                r: document.getElementById('formReg').value,
-                er: document.getElementById('formRole').value,
-                ms: document.getElementById('formShare').value,
-                m: document.getElementById('formMat').value,
-                o: document.getElementById('formOwn').value,
-                b: document.getElementById('formBuy').value,
-                c: document.getElementById('formCore').value,
-                ep: document.getElementById('formEntryPoint').value,
-                exp: document.getElementById('formExp').value.split(',').map(s => s.trim()).filter(s => s !== ""),
-                d: document.getElementById('formDesc').value,
-                sig: "Warm"
-            };
+        document.getElementById('companyForm').onsubmit = async (e) => {
+    e.preventDefault();
+    const idx = parseInt(document.getElementById('editIndex').value);
+    
+    const co = {
+        n: document.getElementById('formName').value,
+        u: document.getElementById('formUrl').value || "#",
+        t: document.getElementById('formType').value,
+        r: document.getElementById('formReg').value,
+        er: document.getElementById('formRole').value,
+        ms: document.getElementById('formShare').value,
+        m: document.getElementById('formMat').value,
+        o: document.getElementById('formOwn').value,
+        b: document.getElementById('formBuy').value,
+        c: document.getElementById('formCore').value,
+        ep: document.getElementById('formEntryPoint').value,
+        exp: document.getElementById('formExp').value.split(',').map(s => s.trim()).filter(s => s !== ""),
+        d: document.getElementById('formDesc').value,
+        sig: "Warm"
+    };
 
-            if (idx === -1) {
-                companies.push(co);
-                populateDropdown();
-            } else {
-                companies[idx] = co;
-            }
-
-            saveDatabase();
-            render();
-            closeModal();
-        };
-
-        function deleteCompany() {
-            const idx = parseInt(document.getElementById('editIndex').value);
-            if (confirm("Permanently delete lead?")) {
-                companies.splice(idx, 1);
-                saveDatabase(); populateDropdown(); render(); closeModal();
-            }
+    try {
+        if (idx === -1) {
+            // Створення нового запису
+            await sb.from('companies').insert([co]);
+        } else {
+            // Оновлення існуючого за його ID з бази
+            const id = companies[idx].id;
+            await sb.from('companies').update(co).eq('id', id);
         }
+        
+        // ПІСЛЯ збереження — завантажуємо актуальні дані та закриваємо модалку
+        await loadDatabase(); 
+        closeModal();
+    } catch (err) {
+        console.error("Помилка при збереженні:", err);
+        alert("Не вдалося зберегти дані в базу.");
+    }
+};
+
+       async function deleteCompany() {
+    const idx = parseInt(document.getElementById('editIndex').value);
+    if (idx !== -1 && confirm("Permanently delete lead?")) {
+        try {
+            const id = companies[idx].id; // Беремо ID запису в базі
+            await sb.from('companies').delete().eq('id', id);
+            
+            await loadDatabase(); // Оновлюємо список
+            closeModal();
+            populateDropdown(); // Оновлюємо список для Lookalikes
+        } catch (err) {
+            alert("Can't delete. Error");
+        }
+    }
+}
 
         function render() {
             const body = document.getElementById('matrixBody');
@@ -710,25 +727,3 @@ function smartFillFromText(text, url) {
     </script>
 </body>
 </html>
-async function saveDatabase() {
-    try {
-        for (const co of companies) {
-            if (co.id) {
-                // Update existing record
-                const { error } = await sb
-                    .from('companies')
-                    .update(co)
-                    .eq('id', co.id);
-                if (error) console.error('Update error:', error);
-            } else {
-                // Insert new record
-                const { data, error } = await sb
-                    .from('companies')
-                    .insert([co]);
-                if (error) console.error('Insert error:', error);
-            }
-        }
-    } catch (error) {
-        console.error('Save error:', error);
-    }
-}
