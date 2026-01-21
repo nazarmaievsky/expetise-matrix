@@ -595,40 +595,48 @@
     function toggleDetails(idx) { document.getElementById(`details-${idx}`).classList.toggle('open'); }
 
     async function deepCheckCompanyAI() {
-        const name = document.getElementById('formName').value;
-        const url = document.getElementById('formUrl').value;
-        const btn = document.getElementById('deepCheckBtn');
-        const icon = document.getElementById('deepIcon');
+    const name = document.getElementById('formName').value;
+    const url = document.getElementById('formUrl').value;
+    const btn = document.getElementById('deepCheckBtn');
+    const icon = document.getElementById('deepIcon');
 
-        const groqKey = localStorage.getItem('groq_api_key');
-        const jinaToken = localStorage.getItem('jina_token');
+    const groqKey = localStorage.getItem('groq_api_key');
+    const jinaToken = localStorage.getItem('jina_token');
 
-        if (!groqKey || !jinaToken) {
-            alert("Please configure Groq and Jina keys in the Settings (⚙️ icon) first.");
-            toggleSettings();
-            return;
-        }
+    if (!groqKey || !jinaToken) {
+        alert("Please, add Groq та Jina API keys in settings (⚙️).");
+        toggleSettings();
+        return;
+    }
 
-        btn.disabled = true; icon.innerText = "⏳";
+    btn.disabled = true;
+    icon.innerText = "⏳";
 
-        try {
-            const searchQuery = `site:${url} OR "${name}" logistics technology software strategy HQ location`;
-            const responseJina = await fetch(`https://s.jina.ai/${encodeURIComponent(searchQuery)}`, {
-                headers: { 'Authorization': `Bearer ${jinaToken}`, 'Accept': 'application/json' }
-            });
-            const jinaData = await responseJina.json();
-            const researchText = jinaData.data.map(item => item.content).join('\n').substring(0, 12000);
+    try {
+        console.log("🚚 Let's drive into analysis", name);
 
-           const promptText = `
-            Analyze the logistics/tech company "${name}" using this research data: ${researchText}.
+        // 1. Пошук даних через Jina
+        const searchQuery = `detailed business model, revenue tier, ecosystem role, and software strategy (build vs buy) for company ${name} ${url}`;
+        const responseJina = await fetch(`https://s.jina.ai/${encodeURIComponent(searchQuery)}`, {
+            headers: { 'Authorization': `Bearer ${jinaToken}`, 'Accept': 'application/json' }
+        });
+        
+        if (!responseJina.ok) throw new Error("Error Jina Search");
+        const jinaData = await responseJina.json();
+        const researchText = jinaData.data.map(item => item.content).join('\n').substring(0, 15000);
+
+        // 2. Аналіз через Groq
+        const promptText = `
+            Analyze the company "${name}" based on this research: ${researchText}.
             
-            Your task is to provide a strategic profile. 
-            For the "summary" field, write a professional 1-2 sentence executive summary that NATURALLY incorporates:
-            - Their primary business model (e.g., Hardware Manufacturer, SaaS, or Hybrid).
-            - Their estimated revenue scale and market position.
-            - Their geographic focus (HQ and main regions).
-            - Their role in the ecosystem (e.g., OEM, Tech Partner, or Service Provider).
-            - Their software strategy (do they build proprietary systems or rely on third-party solutions?).
+            TASK: Create a strategic profile.
+            For the "summary" field, write a professional 1-2 sentence executive summary.
+            YOU MUST COVER THESE 5 POINTS in the summary:
+            1. Business Model (e.g., Manufacturer HW, SaaS, or Hybrid).
+            2. Revenue Scale/Tier (e.g., Global leader, Mid-size, etc.).
+            3. Geographic Focus & Region (HQ location).
+            4. Ecosystem Role (OEM, SaaS vendor, Tech partner, etc.).
+            5. Software Strategy (Do they develop proprietary SW or mostly buy/integrate third-party?).
 
             Return ONLY a JSON object:
             {
@@ -641,37 +649,69 @@
                 "buy_sw": "Yes" | "No",
                 "revenue": "Low" | "Mid" | "High",
                 "growth": "Rapid" | "Stable" | "Declining",
-                "core": "Primary focus areas",
-                "hook": "Strategic entry point for partnership",
-                "expertise": "Keyword1, Keyword2, Keyword3",
-                "summary": "The integrated strategic summary here",
-                "description": "Deep tactical analysis with Business, Strategy, Fit, and Risks sections."
+                "core": "Focus areas",
+                "hook": "Strategic entry point",
+                "expertise": "Key1, Key2, Key3",
+                "summary": "The integrated 5-point summary here",
+                "description": "Full tactical analysis (Business, Strategy, Fit, Risks)."
             }
         `;
 
-            const result = await responseGroq.json();
-            const ai = JSON.parse(result.choices[0].message.content);
+        const responseGroq = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json', 
+                'Authorization': `Bearer ${groqKey}` 
+            },
+            body: JSON.stringify({
+                model: "llama-3.3-70b-versatile",
+                messages: [
+                    { role: "system", content: "You are a Senior Strategic Analyst with deap knowledge in logistic and telematics. Return ONLY valid JSON." },
+                    { role: "user", content: promptText }
+                ],
+                response_format: { "type": "json_object" }
+            })
+        });
 
-            document.getElementById('formType').value = ai.type || '';
-            document.getElementById('formRole').value = ai.role || '';
-            document.getElementById('formReg').value = ai.region || 'EMEA';
-            document.getElementById('formShare').value = ai.share || '';
-            document.getElementById('formMat').value = ai.maturity || 'Low';
-            document.getElementById('formOwn').value = ai.own_sw || 'No';
-            document.getElementById('formBuy').value = ai.buy_sw || 'No';
-            document.getElementById('formRevenue').value = ai.revenue || '';
-            document.getElementById('formGrowth').value = ai.growth || '';
-            document.getElementById('formCore').value = ai.core || '';
-            document.getElementById('formEntryPoint').value = ai.hook || '';
-            document.getElementById('formExp').value = ai.expertise || '';
-            document.getElementById('formDesc').value = ai.description || '';
-            document.getElementById('formAiSummary').value = ai.summary || '';
-			document.getElementById('formDesc').value = ai.description || '';
+        if (!responseGroq.ok) {
+            const errData = await responseGroq.json();
+            throw new Error(errData.error?.message || "Groq API Error");
+        }
 
-            icon.innerText = "✅";
-        } catch (error) { alert(`Error: ${error.message}`); icon.innerText = "❌"; } 
-        finally { btn.disabled = false; setTimeout(() => { icon.innerText = "🚚"; }, 3000); }
+        const result = await responseGroq.json();
+        const ai = JSON.parse(result.choices[0].message.content);
+
+        // 3. Надійне заповнення форми
+        const safeSet = (id, val) => {
+            const el = document.getElementById(id);
+            if (el) el.value = val || '';
+        };
+
+        safeSet('formType', ai.type);
+        safeSet('formRole', ai.role);
+        safeSet('formReg', ai.region);
+        safeSet('formShare', ai.share);
+        safeSet('formMat', ai.maturity);
+        safeSet('formOwn', ai.own_sw);
+        safeSet('formBuy', ai.buy_sw);
+        safeSet('formRevenue', ai.revenue);
+        safeSet('formGrowth', ai.growth);
+        safeSet('formCore', ai.core);
+        safeSet('formEntryPoint', ai.hook);
+        safeSet('formExp', ai.expertise);
+        safeSet('formDesc', ai.description);
+        safeSet('formAiSummary', ai.summary);
+
+        icon.innerText = "✅";
+    } catch (error) { 
+        console.error("Deep Search Error:", error);
+        alert(`Analysis Error: ${error.message}`); 
+        icon.innerText = "❌"; 
+    } finally { 
+        btn.disabled = false; 
+        setTimeout(() => { icon.innerText = "🚚"; }, 3000); 
     }
+}
 
     function toggleSettings() {
         const panel = document.getElementById('settingsPanel');
