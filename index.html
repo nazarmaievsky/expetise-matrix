@@ -618,15 +618,23 @@ function render() {
             const row = document.createElement('tr');
             row.className = `group hover:bg-slate-50 transition-all ${co.ssm >= 70 ? 'row-lookalike' : ''}`;
             row.innerHTML = `
-                <td class="p-6">
-                    <a href="${co.u}" target="_blank" class="text-base font-black uppercase tracking-tighter text-slate-800 hover:text-blue-600 transition-all italic underline decoration-slate-200 decoration-2 underline-offset-4">${co.n}</a>
-                    <div class="flex flex-col gap-1 mt-1">
-                        <div class="flex items-center gap-2">
-                            <span class="text-[9px] font-black px-2 py-0.5 bg-slate-100 text-slate-500 rounded uppercase border border-slate-200">${co.er || 'SaaS'}</span>
-                            <span class="text-[9px] text-slate-400 font-bold uppercase tracking-widest">${co.r}</span>
-                        </div>
-                    </div>
-                </td>
+               <td class="p-6">
+    <a href="${co.u}" target="_blank" class="text-base font-black uppercase tracking-tighter text-slate-800 hover:text-blue-600 transition-all italic underline decoration-slate-200 decoration-2 underline-offset-4">${co.n}</a>
+    
+    <div class="flex flex-col gap-1 mt-1">
+        <div class="flex items-center gap-2">
+            <span class="text-[9px] font-black px-2 py-0.5 bg-slate-100 text-slate-500 rounded uppercase border border-slate-200">${co.er || 'SaaS'}</span>
+            <span class="text-[9px] text-slate-400 font-bold uppercase tracking-widest">${co.r}</span>
+        </div>
+    </div>
+
+    <button onclick="toggleDetails(${co.originalIdx})" class="mt-2 text-[9px] text-blue-500 font-black uppercase hover:underline no-print block">
+        Summary & Relationships
+    </button>
+    <div id="details-${co.originalIdx}" class="details-box mt-2 text-[10px] text-slate-600 leading-relaxed font-medium hidden">
+        ${co.ai_strategic_summary || co.d || 'No strategic summary available.'}
+    </div>
+</td>
                 <td class="p-4 text-center">
                     <div class="flex justify-center">
                         <div class="score-circle ${co.ssm >= 70 ? 'score-high' : co.ssm >= 20 ? 'score-med' : 'score-low'}">${co.ssm === -1 ? 'BASE' : co.ssm + '%'}</div>
@@ -661,7 +669,12 @@ function render() {
     document.getElementById('counter').innerText = viewMode === 'diamond' ? `Diamonds: ${count}` : `Total Leads: ${count}`;
 }
 
-    function toggleDetails(idx) { document.getElementById(`details-${idx}`).classList.toggle('open'); }
+    function toggleDetails(idx) {
+    const el = document.getElementById(`details-${idx}`);
+    if (el) {
+        el.classList.toggle('hidden');
+    }
+}
 
     async function deepCheckCompanyAI() {
     const name = document.getElementById('formName').value;
