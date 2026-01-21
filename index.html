@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Expertise Matrix v29.1</title>
+    <title>Expertise Matrix v30.1</title>
 	<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -35,7 +35,7 @@
         <header class="mb-10 border-b-2 border-slate-200 pb-8 flex flex-col md:flex-row justify-between items-center gap-6 no-print">
             <div>
                 <h1 class="text-4xl font-black uppercase tracking-tighter italic text-blue-900">Expertise Matrix</h1>
-                <p class="text-slate-500 mt-1 uppercase text-[10px] font-bold tracking-widest italic">Leads analysis • v29.1 </p>
+                <p class="text-slate-500 mt-1 uppercase text-[10px] font-bold tracking-widest italic">Leads analysis • v30.1 </p>
             </div>
             <div class="flex flex-col md:items-end gap-3">
                 <div class="flex gap-2">
@@ -413,38 +413,33 @@
             document.getElementById('companyModal').style.display = 'flex';
         }
 
-        function openModalForEdit(originalIdx) {
-            const co = companies[originalIdx];
-            if (!co) return;
+        function openModalForEdit(idx) {
+    const co = companies[idx];
+    document.getElementById('editIndex').value = idx;
+    document.getElementById('modalTitle').innerText = "Edit Strategy: " + co.n;
+    
+    // Основні поля
+    document.getElementById('formName').value = co.n || '';
+    document.getElementById('formUrl').value = co.u || '';
+    document.getElementById('formType').value = co.t || 'SaaS/Platform';
+    document.getElementById('formReg').value = co.r || 'EMEA';
+    document.getElementById('formRole').value = co.er || 'OEM';
+    document.getElementById('formShare').value = co.ms || 'Mid';
+    document.getElementById('formMat').value = co.m || 'Low';
+    document.getElementById('formOwn').value = co.o || 'No';
+    document.getElementById('formBuy').value = co.b || 'No';
+    document.getElementById('formCore').value = co.c || '';
+    document.getElementById('formEntryPoint').value = co.ep || '';
+    document.getElementById('formExp').value = (co.exp || []).join(', ');
+    document.getElementById('formDesc').value = co.d || '';
 
-            document.getElementById('companyForm').reset();
-            
-            document.getElementById('editIndex').value = originalIdx;
-            document.getElementById('formName').value = co.n || "";
-            document.getElementById('formUrl').value = co.u || "";
-            document.getElementById('formShare').value = co.ms || "Mid";
-            document.getElementById('formReg').value = co.r || "EMEA";
-            document.getElementById('formRole').value = co.er || "OEM";
-            document.getElementById('formMat').value = co.m || "Low";
-            
-            // Заповнення Business Model
-            document.getElementById('formType').value = co.t || "SaaS/Platform";
-            
-            document.getElementById('formOwn').value = co.o || "No";
-            document.getElementById('formBuy').value = co.b || "No";
-            
-            document.getElementById('formExp').value = (co.exp || []).join(', ');
-            document.getElementById('formCore').value = co.c || "";
-            document.getElementById('formEntryPoint').value = co.ep || "";
-            document.getElementById('formDesc').value = co.d || "";
-            
-            document.getElementById('deleteBtn').style.display = 'block';
-            document.getElementById('modalTitle').innerText = "Edit Intelligence: " + co.n;
-			document.getElementById('formRevenue').value = co.revenue_tier || 'Mid';
-    		document.getElementById('formGrowth').value = co.growth_rate || 'Stable';
-    		document.getElementById('formAiSummary').value = co.ai_strategic_summary || '';
-            document.getElementById('companyModal').style.display = 'flex';
-        }
+    // НОВІ AI-ПОЛЯ (ті, що в індиго-блоці)
+    document.getElementById('formRevenue').value = co.revenue_tier || 'Mid';
+    document.getElementById('formGrowth').value = co.growth_rate || 'Stable';
+    document.getElementById('formAiSummary').value = co.ai_strategic_summary || '';
+
+    document.getElementById('companyModal').style.display = 'flex';
+}
 
         function closeModal() { document.getElementById('companyModal').style.display = 'none'; }
 
@@ -454,7 +449,7 @@
     
     const co = {
         n: document.getElementById('formName').value,
-        u: document.getElementById('formUrl').value || "#",
+        u: document.getElementById('formUrl').value,
         t: document.getElementById('formType').value,
         r: document.getElementById('formReg').value,
         er: document.getElementById('formRole').value,
@@ -466,28 +461,24 @@
         ep: document.getElementById('formEntryPoint').value,
         exp: document.getElementById('formExp').value.split(',').map(s => s.trim()).filter(s => s !== ""),
         d: document.getElementById('formDesc').value,
-		revenue_tier: document.getElementById('formRevenue').value,
-    	growth_rate: document.getElementById('formGrowth').value,
-    	ai_strategic_summary: document.getElementById('formAiSummary').value,
+        // Нові колонки для бази:
+        revenue_tier: document.getElementById('formRevenue').value,
+        growth_rate: document.getElementById('formGrowth').value,
+        ai_strategic_summary: document.getElementById('formAiSummary').value,
         sig: "Warm"
     };
 
     try {
         if (idx === -1) {
-            // Створення нового запису
             await sb.from('companies').insert([co]);
         } else {
-            // Оновлення існуючого за його ID з бази
-            const id = companies[idx].id;
-            await sb.from('companies').update(co).eq('id', id);
+            await sb.from('companies').update(co).eq('id', companies[idx].id);
         }
-        
-        // ПІСЛЯ збереження — завантажуємо актуальні дані та закриваємо модалку
         await loadDatabase(); 
         closeModal();
     } catch (err) {
-        console.error("Can't save", err);
-        alert("Can't save data to DB.");
+        console.error(err);
+        alert("Error saving data");
     }
 };
        async function deleteCompany() {
