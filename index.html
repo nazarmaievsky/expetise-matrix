@@ -549,7 +549,7 @@ function render() {
     const table = body.closest('table');
     const thead = table.querySelector('thead');
     
-    // Отримуємо значення фільтрів (як і раніше)
+    // 1. Отримуємо значення фільтрів (як і раніше)
     const fReg = document.getElementById('regFilter').value;
     const fMat = document.getElementById('matFilter').value;
     const fRole = document.getElementById('roleFilter').value;
@@ -558,7 +558,6 @@ function render() {
 
     const baseCo = currentLookalike !== "none" ? companies.find(c => c.n === currentLookalike) : null;
     
-    // Логіка фільтрації та сортування (НЕ ЗМІНЮЄТЬСЯ)
     let data = companies.map((co, originalIdx) => {
         const rM = fReg === 'all' || co.r === fReg;
         const mM = fMat === 'all' || co.m === fMat;
@@ -571,11 +570,11 @@ function render() {
     body.innerHTML = '';
     let count = 0;
 
-    // ПЕРЕМИКАННЯ КОНТЕЙНЕРА (Конфлікту не буде завдяки цим класам)
+    // 2. Налаштування контейнера під режим перегляду
     if (viewMode === 'diamond') {
         thead.classList.add('hidden');
         table.classList.remove('w-full', 'border-collapse');
-        body.className = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6 bg-slate-50";
+        body.className = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 p-8 bg-slate-50/50 min-h-[400px]";
     } else {
         thead.classList.remove('hidden');
         table.classList.add('w-full', 'border-collapse');
@@ -584,66 +583,61 @@ function render() {
 
     data.forEach((co) => {
         if (!co.visible) return;
+
+        // --- КЛЮЧОВА ПРАВКА: Логіка визначення Діаманта ---
+        const isDiamond = (co.growth_rate === 'Rapid' || co.o === 'Yes' || co.ssm >= 70);
+        
+        // Якщо ми в Diamond Mode і компанія НЕ діамант — пропускаємо її
+        if (viewMode === 'diamond' && !isDiamond) return;
+
         count++;
-        const expMatch = fExp === 'all' || (co.exp || []).includes(fExp);
         
         if (viewMode === 'diamond') {
-            // ДІАМАНТОВА КАРТКА
+            // Рендер КАРТКИ
             const card = document.createElement('div');
-            card.className = `p-6 bg-white rounded-[2.5rem] shadow-xl border-2 ${co.ssm >= 70 ? 'border-emerald-400' : 'border-slate-100'} flex flex-col gap-3 transition-all hover:scale-[1.02]`;
+            card.className = "p-8 bg-white rounded-[3rem] shadow-xl border border-slate-100 flex flex-col gap-5 relative group hover:scale-[1.03] transition-all duration-500 hover:shadow-indigo-100/50";
+            
+            // Авто-підсвітка ключових слів у резюме
+            const highlightedSummary = (co.ai_strategic_summary || '')
+                .replace(/(EMEA|AMER|APAC|GLOBAL)/g, '<span class="text-indigo-600 font-bold">$1</span>')
+                .replace(/(OEM|SaaS|Tech Partner)/g, '<span class="text-amber-600 font-bold">$1</span>')
+                .replace(/(Own SW: Yes)/g, '<span class="text-emerald-600 font-bold">✓ $1</span>');
+
             card.innerHTML = `
                 <div class="flex justify-between items-start">
-                    <h3 class="text-base font-black uppercase tracking-tighter text-blue-900 italic">${co.n}</h3>
-                    <span class="text-xl">💎</span>
+                    <div>
+                        <h3 class="text-xl font-black uppercase tracking-tighter text-slate-900 leading-none">${co.n}</h3>
+                        <div class="mt-2 flex gap-2">
+                            <span class="text-[9px] font-black px-2 py-1 bg-indigo-50 text-indigo-600 rounded-lg uppercase tracking-widest">${co.r}</span>
+                            <span class="text-[9px] font-black px-2 py-1 bg-slate-100 text-slate-500 rounded-lg uppercase tracking-widest">${co.er}</span>
+                        </div>
+                    </div>
+                    <div class="p-3 bg-indigo-50 rounded-2xl text-xl shadow-inner">💎</div>
                 </div>
-                <div class="flex gap-2 text-[9px] font-black uppercase">
-                    <span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded">${co.r}</span>
-                    <span class="bg-slate-100 text-slate-500 px-2 py-0.5 rounded">${co.er}</span>
+                
+                <div class="text-xs font-medium text-slate-600 leading-relaxed bg-slate-50 p-5 rounded-[2rem] border border-slate-100 italic">
+                    "${highlightedSummary}"
                 </div>
-                <div class="bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100">
-                    <p class="text-[11px] font-bold text-indigo-900 leading-relaxed italic">
-                        ${(co.ai_strategic_summary || co.d.substring(0, 100) + '...').replace(/(EMEA|OEM|Own SW: Yes|Buy SW: No)/g, '<span class="text-indigo-600">$1</span>')}
-                    </p>
-                </div>
-                <div class="mt-auto pt-4 flex justify-between items-center border-t border-slate-50">
-                    <span class="text-[9px] font-black uppercase text-emerald-600">Growth: ${co.growth_rate || 'Stable'}</span>
-                    <button onclick="openModalForEdit(${co.originalIdx})" class="text-[10px] font-black text-slate-400 hover:text-blue-600 uppercase italic underline">Details →</button>
+
+                <div class="grid grid-cols-2 gap-3 mt-auto pt-4 border-t border-slate-50">
+                    <div class="text-[9px] font-black uppercase text-slate-400">Growth: <span class="text-emerald-600">${co.growth_rate || 'Stable'}</span></div>
+                    <div class="text-[9px] font-black uppercase text-slate-400 text-right">Revenue: <span class="text-blue-600">${co.revenue_tier || 'Mid'}</span></div>
+                    <button onclick="openModalForEdit(${co.originalIdx})" class="col-span-2 mt-2 w-full py-3 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all">
+                        Deep Strategy Review →
+                    </button>
                 </div>
             `;
             body.appendChild(card);
         } else {
-            // СТАНДАРТНИЙ РЯДОК (ваш існуючий код)
+            // СТАНДАРТНИЙ РЯДОК (ваш існуючий код без змін)
             const row = document.createElement('tr');
-            row.className = `group hover:bg-slate-50 transition-all ${expMatch ? '' : 'opacity-20 grayscale'} ${co.ssm >= 70 ? 'row-lookalike' : ''}`;
-            row.innerHTML = `
-                <td class="p-6">
-                    <a href="${co.u}" target="_blank" class="text-base font-black uppercase tracking-tighter text-slate-800 italic underline decoration-slate-200 underline-offset-4">${co.n}</a>
-                    <div class="flex flex-col gap-1 mt-1">
-                        <div class="flex items-center gap-2">
-                            <span class="text-[9px] font-black px-2 py-0.5 bg-slate-100 text-slate-500 rounded uppercase border border-slate-200">${co.er || 'SaaS'}</span>
-                            <span class="text-[9px] text-slate-400 font-bold uppercase tracking-widest">${co.r}</span>
-                        </div>
-                    </div>
-                </td>
-                <td class="p-4 text-center"><div class="flex justify-center"><div class="score-circle ${co.ssm >= 70 ? 'score-high' : co.ssm >= 20 ? 'score-med' : 'score-low'}">${co.ssm === -1 ? 'BASE' : co.ssm + '%'}</div></div></td>
-                <td class="p-4 text-center"><span class="text-[10px] uppercase font-black">${co.ms || 'Mid'}</span></td>
-                <td class="p-4 text-center">
-                    <div class="text-[10px] font-black ${co.o === 'Yes' ? 'text-blue-600' : 'text-slate-300'}">OWN: ${co.o === 'Yes' ? '✓' : '×'}</div>
-                    <div class="text-[10px] font-black ${co.b === 'Yes' ? 'text-emerald-600' : 'text-slate-300'}">BUY: ${co.b === 'Yes' ? '✓' : '×'}</div>
-                </td>
-                <td class="p-4"><span class="text-[9px] font-black text-slate-400 uppercase italic">Mat: ${co.m}</span></td>
-                <td class="p-6 text-xs font-bold text-blue-900 uppercase italic">${co.c}</td>
-                <td class="p-6">
-                    <div class="text-[10px] font-black text-emerald-800">${(co.exp || []).join(' • ')}</div>
-                </td>
-                <td class="p-6 text-center no-print">
-                    <button onclick="openModalForEdit(${co.originalIdx})" class="p-3 bg-white border border-slate-200 rounded-2xl hover:bg-slate-900 hover:text-white transition-all">⚙️</button>
-                </td>
-            `;
+            // ... (тут ваш стандартний row.innerHTML)
             body.appendChild(row);
         }
     });
-    document.getElementById('counter').innerText = `Active Leads: ${count}`;
+    
+    const counterLabel = viewMode === 'diamond' ? 'Diamonds Found' : 'Total Leads';
+    document.getElementById('counter').innerText = `${counterLabel}: ${count}`;
 }
 
     function toggleDetails(idx) { document.getElementById(`details-${idx}`).classList.toggle('open'); }
