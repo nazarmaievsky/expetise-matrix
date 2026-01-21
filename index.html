@@ -727,80 +727,117 @@ function smartFillFromText(text, url) {
 }
 
 	async function deepCheckCompanyAI() {
+    // 1. Отримуємо елементи інтерфейсу для індикації
     const name = document.getElementById('formName').value;
     const url = document.getElementById('formUrl').value;
     const btn = document.getElementById('deepCheckBtn');
     const icon = document.getElementById('deepIcon');
-    
+
+    // 2. Валідація вводу
     if (!name || !url) {
         alert("Please enter Name and URL first.");
         return;
     }
 
-    let apiKey = localStorage.getItem('gemini_api_key');
-    if (!apiKey) {
-        apiKey = prompt("Enter Gemini API Key:");
-        if (apiKey) localStorage.setItem('gemini_api_key', apiKey);
+    // 3. Робота з ключами (LocalStorage)
+    let geminiKey = localStorage.getItem('gemini_api_key');
+    let jinaToken = localStorage.getItem('jina_token');
+
+    if (!geminiKey) {
+        geminiKey = prompt("Enter your Gemini API Key:");
+        if (geminiKey) localStorage.setItem('gemini_api_key', geminiKey);
         else return;
     }
 
+    if (!jinaToken) {
+        jinaToken = prompt("Enter your Jina AI Token (from jina.ai):");
+        if (jinaToken) localStorage.setItem('jina_token', jinaToken);
+        else return;
+    }
+
+    // 4. Початок процесу (UI Feedback)
     btn.disabled = true;
     btn.classList.add('opacity-50');
     icon.innerText = "⏳";
 
     try {
-        // 1. Глибокий пошук контенту через Jina Search
-        const searchQuery = `site:${url} OR "${name}" logistics technology software build or buy strategy products`;
-        const jinaSearchUrl = `https://s.jina.ai/${encodeURIComponent(searchQuery)}`;
-        const researchData = await fetch(jinaSearchUrl).then(r => r.text());
+        console.log("🔍 Step 1: Searching via Jina Search API...");
+        
+        // Пошуковий запит для глибокого аналізу
+        const searchQuery = `site:${url} OR "${name}" logistics software technology strategy buy or build`;
+        
+        const responseJina = await fetch(`https://s.jina.ai/${encodeURIComponent(searchQuery)}`, {
+            headers: { 
+                'Authorization': `Bearer ${jinaToken}`,
+                'Accept': 'application/json' 
+            }
+        });
 
-        // 2. Промпт для Gemini, налаштований під поля вашого модального вікна
+        if (!responseJina.ok) throw new Error(`Jina Search failed: ${responseJina.status}`);
+        const jinaData = await responseJina.json();
+        const researchText = jinaData.data.map(item => item.content).join('\n').substring(0, 15000);
+
+        console.log("🧠 Step 2: Analyzing with Gemini 1.5 Flash...");
+
         const promptText = `
-            As a Strategic Analyst, analyze this research data about ${name}: 
-            ${researchData.substring(0, 15000)}
-            
-            Return ONLY a JSON object with the following fields (all values in English):
+            As a Strategic Analyst, analyze this data: ${researchText}
+            Return ONLY a JSON object for company "${name}" (language: English):
             {
-                "type": "Manufactures HW" or "SaaS/Platform" or "Service Provider",
-                "role": "OEM" or "Consumer" or "Carrier" or "Platform",
+                "type": "Manufactures HW" or "SaaS/Platform" or "Hybrid Model",
+                "role": "OEM" or "SaaS/Platform" or "Tech Partner" or "Consumer",
                 "share": "Low" or "Mid" or "High",
-                "maturity": "Low" or "Mid" or "High",
+                "maturity": "Low" or "Med" or "High",
                 "own_sw": "Yes" or "No",
                 "buy_sw": "Yes" or "No",
-                "focus": "Top 3 industry focus areas/domains",
-                "hook": "Strategic entry point or unique value proposition",
-                "expertise": ["Expertise 1", "Expertise 2"],
-                "description": "[AI STRATEGIC ANALYSIS]\\n- BUSINESS: ...\\n- STRATEGY: ...\\n- FIT: ...\\n- RISKS: ...\\n\\nDISCLAIMER: AI-generated."
+                "revenue": "Low" or "Mid" or "High",
+                "growth": "Rapid" or "Stable" or "Declining",
+                "core": "Top 3 industry domains",
+                "hook": "Strategic value proposition",
+                "expertise": "Keyword1, Keyword2, Keyword3",
+                "description": "[AI STRATEGIC ANALYSIS]\\n- BUSINESS: ...\\n- STRATEGY: ...\\n- FIT: ...\\n- RISKS: ...\\n\\nDISCLAIMER: AI-generated analysis."
             }
         `;
 
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+        const responseGemini = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${geminiKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
         });
 
-        const result = await response.json();
-		console.log("Gemini Raw Result:", result);
-        const jsonResponse = result.candidates[0].content.parts[0].text.replace(/```json|```/g, '');
-        const ai = JSON.parse(jsonResponse);
+        const result = await responseGemini.json();
 
-        // 3. Автоматичне заповнення полів форми
-        document.getElementById('formType').value = ai.type || "SaaS/Platform";
-        document.getElementById('formRole').value = ai.role || "OEM";
-        document.getElementById('formShare').value = ai.share || "Mid";
-        document.getElementById('formMat').value = ai.maturity || "Low";
-        document.getElementById('formOwn').value = ai.own_sw || "No";
-        document.getElementById('formBuy').value = ai.buy_sw || "No";
-        document.getElementById('formCore').value = ai.focus || "";
-        document.getElementById('formEntryPoint').value = ai.hook || "";
-        document.getElementById('formExp').value = (ai.expertise || []).join(', ');
-        document.getElementById('formDesc').value = ai.description || "";
+        // 5. БЕЗПЕЧНА ПЕРЕВІРКА ВІДПОВІДІ (Захист від TypeError)
+        if (result.error) throw new Error(`Gemini API: ${result.error.message}`);
+        
+        const aiRawText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!aiRawText) throw new Error("Gemini returned no content. Check safety filters.");
+
+        // Очищення JSON від Markdown-обгорток
+        const jsonClean = aiRawText.replace(/```json|```/g, '').trim();
+        const ai = JSON.parse(jsonClean);
+
+        console.log("✅ Step 3: Mapping data to UI...");
+
+        // 6. Заповнення полів форми
+        document.getElementById('formType').value = ai.type || 'SaaS/Platform';
+        document.getElementById('formRole').value = ai.role || 'OEM';
+        document.getElementById('formShare').value = ai.share || 'Mid';
+        document.getElementById('formMat').value = ai.maturity || 'Low';
+        document.getElementById('formOwn').value = ai.own_sw || 'No';
+        document.getElementById('formBuy').value = ai.buy_sw || 'No';
+        document.getElementById('formRevenue').value = ai.revenue || 'Mid';
+        document.getElementById('formGrowth').value = ai.growth || 'Stable';
+        document.getElementById('formCore').value = ai.core || '';
+        document.getElementById('formEntryPoint').value = ai.hook || '';
+        document.getElementById('formExp').value = ai.expertise || '';
+        document.getElementById('formDesc').value = ai.description || '';
+        document.getElementById('formAiSummary').value = ai.description.split('\\n')[1] || ''; // Перший рядок для короткого резюме
 
         icon.innerText = "✅";
+
     } catch (error) {
-        console.error("AI Auto-fill Error:", error);
-        alert("Analysis failed. Check console for details.");
+        console.error("CRITICAL ERROR:", error);
+        alert(`Deep Search Error: ${error.message}`);
         icon.innerText = "❌";
     } finally {
         btn.disabled = false;
