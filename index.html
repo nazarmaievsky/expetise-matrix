@@ -619,34 +619,13 @@
             const jinaData = await responseJina.json();
             const researchText = jinaData.data.map(item => item.content).join('\n').substring(0, 12000);
 
-            const promptText = `
-    Analyze logistics company "${name}" based on this research: ${researchText}
-    
-    STRICT FORMATTING RULES:
-    1. region: Determine HQ (Europe/Poland -> "EMEA", USA -> "AMER", Asia -> "APAC").
-    2. summary: Create a strategic TL;DR. 
-       STRICT BACKUP RULE: You MUST start the summary with these tags:
-       [Region | Role | Maturity | Own SW: Yes/No | Buy SW: Yes/No]
-       Example: "[EMEA | OEM | High | Own SW: Yes | Buy SW: No] Polish trailer manufacturer with in-house telematics."
-    
-    Return ONLY a JSON object:
-    {
-        "type": "Manufactures HW" | "SaaS/Platform" | "Hybrid Model",
-        "role": "OEM" | "SaaS/Platform" | "Tech Partner",
-        "region": "EMEA" | "AMER" | "APAC" | "GLOBAL",
-        "share": "Low" | "Mid" | "High",
-        "maturity": "Low" | "Med" | "High",
-        "own_sw": "Yes" | "No",
-        "buy_sw": "Yes" | "No",
-        "revenue": "Low" | "Mid" | "High",
-        "growth": "Rapid" | "Stable" | "Declining",
-        "core": "Focus areas",
-        "hook": "Strategic entry point",
-        "expertise": "Key1, Key2",
-        "summary": "The tagged summary string here",
-        "description": "Full analysis text"
-    }
-`;
+            const promptText = `Analyze logistics company "${name}" based on: ${researchText}. 
+        Determine Region (HQ Europe -> EMEA, USA -> AMER, Asia -> APAC).
+        Return ONLY JSON: { 
+            "type", "role", "region", "share", "maturity", 
+            "own_sw", "buy_sw", "revenue", "growth", 
+            "core", "hook", "expertise", "summary", "description" 
+        }`;
 
             const result = await responseGroq.json();
             const ai = JSON.parse(result.choices[0].message.content);
