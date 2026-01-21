@@ -552,34 +552,34 @@ function render() {
     const table = body.closest('table');
     const thead = table.querySelector('thead');
     
-    const filters = {
-        reg: document.getElementById('regFilter').value,
-        mat: document.getElementById('matFilter').value,
-        role: document.getElementById('roleFilter').value,
-        share: document.getElementById('shareFilter').value,
-        exp: document.getElementById('expFilter').value
-    };
+    // Фільтрація (залишаємо без змін)
+    const fReg = document.getElementById('regFilter').value;
+    const fMat = document.getElementById('matFilter').value;
+    const fRole = document.getElementById('roleFilter').value;
+    const fShare = document.getElementById('shareFilter').value;
+    const fExp = document.getElementById('expFilter').value;
 
     const baseCo = currentLookalike !== "none" ? companies.find(c => c.n === currentLookalike) : null;
     
     let data = companies.map((co, originalIdx) => {
-        const match = (filters.reg === 'all' || co.r === filters.reg) &&
-                      (filters.mat === 'all' || co.m === filters.mat) &&
-                      (filters.role === 'all' || (co.er || "").includes(filters.role)) &&
-                      (filters.share === 'all' || co.ms === filters.share);
-        return { ...co, originalIdx, visible: match, ssm: getSimilarity(co, baseCo) };
+        const rM = fReg === 'all' || co.r === fReg;
+        const mM = fMat === 'all' || co.m === fMat;
+        const roleMatch = fRole === 'all' || (co.er || "").includes(fRole);
+        const shareMatch = fShare === 'all' || co.ms === fShare;
+        return { ...co, originalIdx, visible: rM && mM && roleMatch && shareMatch, ssm: getSimilarity(co, baseCo) };
     });
 
     data.sort((a, b) => b.ssm - a.ssm);
     body.innerHTML = '';
     let count = 0;
 
+    // Налаштування режимів (Стандартний vs Діамантовий)
     if (viewMode === 'diamond') {
-        thead.style.display = 'none';
-        table.style.display = 'block'; // Перетворюємо таблицю на контейнер
-        body.className = "diamond-grid";
+        thead.classList.add('hidden');
+        table.style.display = 'block';
+        body.className = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 p-8 bg-slate-50";
     } else {
-        thead.style.display = 'table-header-group';
+        thead.classList.remove('hidden');
         table.style.display = 'table';
         body.className = "divide-y divide-slate-100";
     }
@@ -587,64 +587,78 @@ function render() {
     data.forEach((co) => {
         if (!co.visible) return;
 
-        // --- ЖОРСТКИЙ ФІЛЬТР ДІАМАНТІВ (v31.1) ---
-        // Діамант = (Швидкий ріст + Свій софт) АБО (Надзвичайна схожість > 80%)
+        // Логіка Hidden Diamond (v31.2 - більш збалансована)
         const isDiamond = (co.growth_rate === 'Rapid' && co.o === 'Yes') || (co.ssm >= 80);
-        
         if (viewMode === 'diamond' && !isDiamond) return;
-        count++;
 
+        count++;
+        
         if (viewMode === 'diamond') {
+            // Режим Діамантів (Картки)
             const card = document.createElement('div');
-            card.className = "diamond-card";
-            const summary = (co.ai_strategic_summary || co.d || '').substring(0, 150);
+            card.className = "p-8 bg-white rounded-[3rem] shadow-xl border border-slate-100 flex flex-col gap-4 relative group hover:scale-[1.02] transition-all";
             card.innerHTML = `
                 <div class="flex justify-between items-start">
-                    <h3 class="text-xl font-black uppercase tracking-tighter text-blue-900 italic">${co.n}</h3>
+                    <a href="${co.u}" target="_blank" class="hover:opacity-70"><h3 class="text-xl font-black uppercase tracking-tighter text-blue-900 italic">${co.n}</h3></a>
                     <span class="text-2xl">💎</span>
                 </div>
-                <div class="flex gap-2">
-                    <span class="text-[9px] font-black px-2 py-1 bg-blue-100 text-blue-700 rounded uppercase">${co.r}</span>
-                    <span class="text-[9px] font-black px-2 py-1 bg-emerald-100 text-emerald-700 rounded uppercase">Growth: ${co.growth_rate}</span>
+                <div class="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">${co.r} • ${co.er}</div>
+                <div class="text-xs text-slate-600 leading-relaxed font-medium bg-slate-50 p-5 rounded-2xl italic border border-slate-100">
+                    ${(co.ai_strategic_summary || '').replace(/(EMEA|OEM|Own SW: Yes)/g, '<span class="text-indigo-700 font-bold">$1</span>')}
                 </div>
-                <p class="text-xs text-slate-600 italic leading-relaxed bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                    "${summary.replace(/(EMEA|Own SW: Yes|Rapid)/g, '<span class="highlight-text">$1</span>')}..."
-                </p>
-                <div class="mt-auto pt-4 flex justify-between items-center">
-                    <span class="text-[10px] font-black text-slate-400">ROLE: ${co.er}</span>
-                    <button onclick="openModalForEdit(${co.originalIdx})" class="text-[10px] font-black text-blue-600 underline uppercase tracking-widest">Open Strategy</button>
+                <div class="mt-auto flex justify-between items-center pt-4">
+                    <span class="text-[9px] font-black px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full uppercase italic">Growth: ${co.growth_rate}</span>
+                    <button onclick="openModalForEdit(${co.originalIdx})" class="text-[9px] font-black text-slate-400 hover:text-black uppercase underline italic">Strategy →</button>
                 </div>
             `;
             body.appendChild(card);
         } else {
+            // ВІДНОВЛЕНО: Стандартний режим (Рядки таблиці)
+            // Повертаємо оригінальний HTML-код комірок, який був до моїх невдалих правок
             const row = document.createElement('tr');
             row.className = `group hover:bg-slate-50 transition-all ${co.ssm >= 70 ? 'row-lookalike' : ''}`;
             row.innerHTML = `
                 <td class="p-6">
-                    <div class="font-black uppercase tracking-tighter text-slate-800 italic">${co.n}</div>
-                    <div class="text-[9px] text-slate-400 font-bold uppercase">${co.r} | ${co.er}</div>
+                    <a href="${co.u}" target="_blank" class="text-base font-black uppercase tracking-tighter text-slate-800 hover:text-blue-600 transition-all italic underline decoration-slate-200 decoration-2 underline-offset-4">${co.n}</a>
+                    <div class="flex flex-col gap-1 mt-1">
+                        <div class="flex items-center gap-2">
+                            <span class="text-[9px] font-black px-2 py-0.5 bg-slate-100 text-slate-500 rounded uppercase border border-slate-200">${co.er || 'SaaS'}</span>
+                            <span class="text-[9px] text-slate-400 font-bold uppercase tracking-widest">${co.r}</span>
+                        </div>
+                    </div>
                 </td>
                 <td class="p-4 text-center">
                     <div class="flex justify-center">
-                        <div class="score-circle ${co.ssm >= 70 ? 'score-high' : 'score-med'}">${co.ssm === -1 ? 'BASE' : co.ssm + '%'}</div>
+                        <div class="score-circle ${co.ssm >= 70 ? 'score-high' : co.ssm >= 20 ? 'score-med' : 'score-low'}">${co.ssm === -1 ? 'BASE' : co.ssm + '%'}</div>
                     </div>
                 </td>
-                <td class="p-4 text-center font-black text-[10px]">${co.ms}</td>
+                <td class="p-4 text-center"><span class="text-[10px] uppercase font-black">${co.ms || 'Mid'}</span></td>
                 <td class="p-4 text-center">
-                    <div class="text-[9px] font-black">OWN: ${co.o === 'Yes' ? '✓' : '×'}</div>
-                    <div class="text-[9px] font-black">BUY: ${co.b === 'Yes' ? '✓' : '×'}</div>
+                    <div class="text-[10px] font-black ${co.o === 'Yes' ? 'text-blue-600' : 'text-slate-300'}">OWN: ${co.o === 'Yes' ? '✓' : '×'}</div>
+                    <div class="text-[10px] font-black ${co.b === 'Yes' ? 'text-emerald-600' : 'text-slate-300'}">BUY: ${co.b === 'Yes' ? '✓' : '×'}</div>
                 </td>
-                <td class="p-4"><span class="text-[9px] font-black bg-amber-100 px-2 py-1 rounded text-amber-700 uppercase">${co.sig}</span></td>
-                <td class="p-6 text-xs font-bold text-blue-900 italic">${co.c}</td>
-                <td class="p-6 text-[10px] font-medium italic text-slate-500">${co.ep}</td>
+                <td class="p-4">
+                    <div class="flex flex-col gap-1 text-center">
+                        <span class="text-[9px] font-black text-slate-400 uppercase italic">Mat: ${co.m}</span>
+                    </div>
+                </td>
+                <td class="p-6">
+                    <div class="text-xs font-bold text-blue-900 uppercase italic leading-tight">${co.c || ''}</div>
+                </td>
+                <td class="p-6 text-[10px] font-medium italic text-slate-500 leading-tight">
+                    ${co.ep || ''}
+                </td>
                 <td class="p-6 text-center no-print">
-                    <button onclick="openModalForEdit(${co.originalIdx})" class="p-2 border rounded-xl hover:bg-slate-900 hover:text-white transition-all">⚙️</button>
+                    <button onclick="openModalForEdit(${co.originalIdx})" class="p-3 bg-white border border-slate-200 rounded-2xl shadow-sm hover:bg-slate-900 hover:text-white transition-all">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                    </button>
                 </td>
             `;
             body.appendChild(row);
         }
     });
-    document.getElementById('counter').innerText = viewMode === 'diamond' ? `Diamonds Identified: ${count}` : `Leads Inventory: ${count}`;
+    
+    document.getElementById('counter').innerText = viewMode === 'diamond' ? `Diamonds: ${count}` : `Total Leads: ${count}`;
 }
 
     function toggleDetails(idx) { document.getElementById(`details-${idx}`).classList.toggle('open'); }
