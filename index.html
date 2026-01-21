@@ -819,26 +819,52 @@ function smartFillFromText(text, url) {
             }
         `;
 
-			console.log("🧠 Step 2: Analyzing with Gemini 1.5 Flash (v1beta)...");
+			console.log("🧠 Step 2: Analyzing with Gemini...");
 
-        // Використовуємо v1beta для максимальної сумісності
-        const responseGemini = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`, {
+// Список моделей для спроби (від найшвидшої до найпотужнішої)
+const modelsToTry = [
+    'gemini-1.5-flash-latest', 
+    'gemini-1.5-flash', 
+    'gemini-1.5-pro-latest',
+    'gemini-2.0-flash-exp' // На випадок нових версій у 2026
+];
+
+let success = false;
+let result;
+let lastError = "";
+
+for (const modelName of modelsToTry) {
+    if (success) break;
+    
+    console.log(`📡 Trying model: ${modelName}...`);
+    try {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${geminiKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
         });
 
-        const result = await responseGemini.json();
-
-        // 5. БЕЗПЕЧНА ПЕРЕВІРКА ВІДПОВІДІ
-        if (result.error) {
-            // Якщо помилка все одно є, ми виведемо її деталі
-            console.error("Gemini API Error Detail:", result.error);
-            throw new Error(`Gemini API: ${result.error.message} (Status: ${result.error.status})`);
-        }
+        result = await response.json();
         
-        // Перевірка наявності контенту через Optional Chaining
-        const aiRawText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (response.ok && !result.error) {
+            success = true;
+            console.log(`✅ Success with: ${modelName}`);
+        } else {
+            lastError = result.error?.message || "Unknown error";
+            console.warn(`❌ ${modelName} failed: ${lastError}`);
+        }
+    } catch (e) {
+        lastError = e.message;
+        console.error(`Attempt with ${modelName} failed`);
+    }
+}
+
+if (!success) {
+    throw new Error(`All Gemini models failed. Last error: ${lastError}`);
+}
+
+// Далі йде ваша логіка обробки (aiRawText = result.candidates[0]...)
+const aiRawText = result.candidates?.[0]?.content?.parts?.[0]?.text;
 
         // Очищення JSON від Markdown-обгорток
         const jsonClean = aiRawText.replace(/```json|```/g, '').trim();
