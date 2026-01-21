@@ -21,6 +21,11 @@
         .ms-high { @apply text-purple-700 font-black; }
         .ms-mid { @apply text-blue-600 font-bold; }
         .ms-low { @apply text-slate-400 font-medium; }
+		/* Стилі для Diamond Mode */
+		.diamond-grid { display: grid !important; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 2rem; padding: 2rem; background: #f8fafc; }
+		.diamond-card { @apply bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100 flex flex-col gap-4 transition-all duration-500; }
+		.diamond-card:hover { transform: translateY(-10px); shadow-2xl; border-color: #6366f1; }
+		.highlight-text { @apply text-indigo-600 font-bold; }
 
         @media print {
             .no-print { display: none !important; }
@@ -161,16 +166,16 @@
             </div>
         </div>
 
-		<div class="flex justify-center mb-8">
-    <div class="inline-flex p-1 bg-slate-100 rounded-2xl shadow-inner" role="group">
-        <button onclick="setViewMode('standard')" id="btnStandard" class="px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 bg-white shadow-sm text-slate-900">
-            <span>📋</span> Standard Table
+		<div class="flex justify-center mb-8 no-print">
+    <div class="inline-flex p-1 bg-slate-100 rounded-2xl border border-slate-200">
+        <button onclick="setViewMode('standard')" id="btnStandard" class="px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 bg-white shadow-sm text-blue-900">
+            📋 Standard Table
         </button>
         <button onclick="setViewMode('diamond')" id="btnDiamond" class="px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 text-slate-400 hover:text-indigo-600">
-            <span>💎</span> Hidden Diamonds
+            💎 Hidden Diamonds
         </button>
     </div>
-	</div>
+</div>
 		
         <div class="mb-4 flex justify-end no-print px-4">
             <span id="counter" class="text-[10px] font-black text-blue-600 bg-blue-50 px-4 py-2 rounded-full border border-blue-200 uppercase tracking-widest italic">Active Leads: 82</span>
@@ -410,11 +415,9 @@ let viewMode = 'standard';
 
 function setViewMode(mode) {
     viewMode = mode;
-    // Оновлення стилів кнопок
-    const isStandard = mode === 'standard';
-    document.getElementById('btnStandard').className = isStandard ? 'px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 bg-white shadow-sm text-slate-900' : 'px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 text-slate-400 hover:text-indigo-600';
-    document.getElementById('btnDiamond').className = !isStandard ? 'px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 bg-white shadow-sm text-indigo-600' : 'px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 text-slate-400 hover:text-indigo-600';
-    
+    const isStd = mode === 'standard';
+    document.getElementById('btnStandard').className = isStd ? 'px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 bg-white shadow-sm text-blue-900' : 'px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 text-slate-400 hover:text-indigo-600';
+    document.getElementById('btnDiamond').className = !isStd ? 'px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 bg-white shadow-sm text-indigo-600' : 'px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 text-slate-400 hover:text-indigo-600';
     render();
 }
 		
@@ -549,95 +552,99 @@ function render() {
     const table = body.closest('table');
     const thead = table.querySelector('thead');
     
-    // 1. Отримуємо значення фільтрів (як і раніше)
-    const fReg = document.getElementById('regFilter').value;
-    const fMat = document.getElementById('matFilter').value;
-    const fRole = document.getElementById('roleFilter').value;
-    const fShare = document.getElementById('shareFilter').value;
-    const fExp = document.getElementById('expFilter').value;
+    const filters = {
+        reg: document.getElementById('regFilter').value,
+        mat: document.getElementById('matFilter').value,
+        role: document.getElementById('roleFilter').value,
+        share: document.getElementById('shareFilter').value,
+        exp: document.getElementById('expFilter').value
+    };
 
     const baseCo = currentLookalike !== "none" ? companies.find(c => c.n === currentLookalike) : null;
     
     let data = companies.map((co, originalIdx) => {
-        const rM = fReg === 'all' || co.r === fReg;
-        const mM = fMat === 'all' || co.m === fMat;
-        const roleMatch = fRole === 'all' || (co.er || "").includes(fRole);
-        const shareMatch = fShare === 'all' || co.ms === fShare;
-        return { ...co, originalIdx, visible: rM && mM && roleMatch && shareMatch, ssm: getSimilarity(co, baseCo) };
+        const match = (filters.reg === 'all' || co.r === filters.reg) &&
+                      (filters.mat === 'all' || co.m === filters.mat) &&
+                      (filters.role === 'all' || (co.er || "").includes(filters.role)) &&
+                      (filters.share === 'all' || co.ms === filters.share);
+        return { ...co, originalIdx, visible: match, ssm: getSimilarity(co, baseCo) };
     });
 
     data.sort((a, b) => b.ssm - a.ssm);
     body.innerHTML = '';
     let count = 0;
 
-    // 2. Налаштування контейнера під режим перегляду
     if (viewMode === 'diamond') {
-        thead.classList.add('hidden');
-        table.classList.remove('w-full', 'border-collapse');
-        body.className = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 p-8 bg-slate-50/50 min-h-[400px]";
+        thead.style.display = 'none';
+        table.style.display = 'block'; // Перетворюємо таблицю на контейнер
+        body.className = "diamond-grid";
     } else {
-        thead.classList.remove('hidden');
-        table.classList.add('w-full', 'border-collapse');
+        thead.style.display = 'table-header-group';
+        table.style.display = 'table';
         body.className = "divide-y divide-slate-100";
     }
 
     data.forEach((co) => {
         if (!co.visible) return;
 
-        // --- КЛЮЧОВА ПРАВКА: Логіка визначення Діаманта ---
-        const isDiamond = (co.growth_rate === 'Rapid' || co.o === 'Yes' || co.ssm >= 70);
+        // --- ЖОРСТКИЙ ФІЛЬТР ДІАМАНТІВ (v31.1) ---
+        // Діамант = (Швидкий ріст + Свій софт) АБО (Надзвичайна схожість > 80%)
+        const isDiamond = (co.growth_rate === 'Rapid' && co.o === 'Yes') || (co.ssm >= 80);
         
-        // Якщо ми в Diamond Mode і компанія НЕ діамант — пропускаємо її
         if (viewMode === 'diamond' && !isDiamond) return;
-
         count++;
-        
-        if (viewMode === 'diamond') {
-            // Рендер КАРТКИ
-            const card = document.createElement('div');
-            card.className = "p-8 bg-white rounded-[3rem] shadow-xl border border-slate-100 flex flex-col gap-5 relative group hover:scale-[1.03] transition-all duration-500 hover:shadow-indigo-100/50";
-            
-            // Авто-підсвітка ключових слів у резюме
-            const highlightedSummary = (co.ai_strategic_summary || '')
-                .replace(/(EMEA|AMER|APAC|GLOBAL)/g, '<span class="text-indigo-600 font-bold">$1</span>')
-                .replace(/(OEM|SaaS|Tech Partner)/g, '<span class="text-amber-600 font-bold">$1</span>')
-                .replace(/(Own SW: Yes)/g, '<span class="text-emerald-600 font-bold">✓ $1</span>');
 
+        if (viewMode === 'diamond') {
+            const card = document.createElement('div');
+            card.className = "diamond-card";
+            const summary = (co.ai_strategic_summary || co.d || '').substring(0, 150);
             card.innerHTML = `
                 <div class="flex justify-between items-start">
-                    <div>
-                        <h3 class="text-xl font-black uppercase tracking-tighter text-slate-900 leading-none">${co.n}</h3>
-                        <div class="mt-2 flex gap-2">
-                            <span class="text-[9px] font-black px-2 py-1 bg-indigo-50 text-indigo-600 rounded-lg uppercase tracking-widest">${co.r}</span>
-                            <span class="text-[9px] font-black px-2 py-1 bg-slate-100 text-slate-500 rounded-lg uppercase tracking-widest">${co.er}</span>
-                        </div>
-                    </div>
-                    <div class="p-3 bg-indigo-50 rounded-2xl text-xl shadow-inner">💎</div>
+                    <h3 class="text-xl font-black uppercase tracking-tighter text-blue-900 italic">${co.n}</h3>
+                    <span class="text-2xl">💎</span>
                 </div>
-                
-                <div class="text-xs font-medium text-slate-600 leading-relaxed bg-slate-50 p-5 rounded-[2rem] border border-slate-100 italic">
-                    "${highlightedSummary}"
+                <div class="flex gap-2">
+                    <span class="text-[9px] font-black px-2 py-1 bg-blue-100 text-blue-700 rounded uppercase">${co.r}</span>
+                    <span class="text-[9px] font-black px-2 py-1 bg-emerald-100 text-emerald-700 rounded uppercase">Growth: ${co.growth_rate}</span>
                 </div>
-
-                <div class="grid grid-cols-2 gap-3 mt-auto pt-4 border-t border-slate-50">
-                    <div class="text-[9px] font-black uppercase text-slate-400">Growth: <span class="text-emerald-600">${co.growth_rate || 'Stable'}</span></div>
-                    <div class="text-[9px] font-black uppercase text-slate-400 text-right">Revenue: <span class="text-blue-600">${co.revenue_tier || 'Mid'}</span></div>
-                    <button onclick="openModalForEdit(${co.originalIdx})" class="col-span-2 mt-2 w-full py-3 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all">
-                        Deep Strategy Review →
-                    </button>
+                <p class="text-xs text-slate-600 italic leading-relaxed bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                    "${summary.replace(/(EMEA|Own SW: Yes|Rapid)/g, '<span class="highlight-text">$1</span>')}..."
+                </p>
+                <div class="mt-auto pt-4 flex justify-between items-center">
+                    <span class="text-[10px] font-black text-slate-400">ROLE: ${co.er}</span>
+                    <button onclick="openModalForEdit(${co.originalIdx})" class="text-[10px] font-black text-blue-600 underline uppercase tracking-widest">Open Strategy</button>
                 </div>
             `;
             body.appendChild(card);
         } else {
-            // СТАНДАРТНИЙ РЯДОК (ваш існуючий код без змін)
             const row = document.createElement('tr');
-            // ... (тут ваш стандартний row.innerHTML)
+            row.className = `group hover:bg-slate-50 transition-all ${co.ssm >= 70 ? 'row-lookalike' : ''}`;
+            row.innerHTML = `
+                <td class="p-6">
+                    <div class="font-black uppercase tracking-tighter text-slate-800 italic">${co.n}</div>
+                    <div class="text-[9px] text-slate-400 font-bold uppercase">${co.r} | ${co.er}</div>
+                </td>
+                <td class="p-4 text-center">
+                    <div class="flex justify-center">
+                        <div class="score-circle ${co.ssm >= 70 ? 'score-high' : 'score-med'}">${co.ssm === -1 ? 'BASE' : co.ssm + '%'}</div>
+                    </div>
+                </td>
+                <td class="p-4 text-center font-black text-[10px]">${co.ms}</td>
+                <td class="p-4 text-center">
+                    <div class="text-[9px] font-black">OWN: ${co.o === 'Yes' ? '✓' : '×'}</div>
+                    <div class="text-[9px] font-black">BUY: ${co.b === 'Yes' ? '✓' : '×'}</div>
+                </td>
+                <td class="p-4"><span class="text-[9px] font-black bg-amber-100 px-2 py-1 rounded text-amber-700 uppercase">${co.sig}</span></td>
+                <td class="p-6 text-xs font-bold text-blue-900 italic">${co.c}</td>
+                <td class="p-6 text-[10px] font-medium italic text-slate-500">${co.ep}</td>
+                <td class="p-6 text-center no-print">
+                    <button onclick="openModalForEdit(${co.originalIdx})" class="p-2 border rounded-xl hover:bg-slate-900 hover:text-white transition-all">⚙️</button>
+                </td>
+            `;
             body.appendChild(row);
         }
     });
-    
-    const counterLabel = viewMode === 'diamond' ? 'Diamonds Found' : 'Total Leads';
-    document.getElementById('counter').innerText = `${counterLabel}: ${count}`;
+    document.getElementById('counter').innerText = viewMode === 'diamond' ? `Diamonds Identified: ${count}` : `Leads Inventory: ${count}`;
 }
 
     function toggleDetails(idx) { document.getElementById(`details-${idx}`).classList.toggle('open'); }
