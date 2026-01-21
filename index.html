@@ -231,7 +231,7 @@
                 </div>
                <div class="space-y-1 col-span-2">
     					<label class="text-[9px] font-black uppercase text-indigo-600 ml-2">AI Strategic Summary (Redundant Data)</label>
-    					<input type="text" id="formAiSummary" class="w-full p-4 bg-indigo-50/50 border border-indigo-100 rounded-2xl outline-none text-xs font-bold text-indigo-900" placeholder="AI Analysis will appear here...">
+    					<textarea id="formAiSummary" rows="2" class="w-full p-4 bg-indigo-50/50 border border-indigo-100 rounded-2xl outline-none text-xs font-bold text-indigo-900" placeholder="AI Analysis will appear here"></textarea>
 			</div>
             </div>
 
@@ -631,12 +631,13 @@
             
             TASK: Create a strategic profile.
             For the "summary" field, write a professional 1-2 sentence executive summary.
-            YOU MUST COVER THESE 5 POINTS in the summary:
+            YOU MUST COVER THESE 6 POINTS in the summary:
             1. Business Model (e.g., Manufacturer HW, SaaS, or Hybrid).
             2. Revenue Scale/Tier (e.g., Global leader, Mid-size, etc.).
             3. Geographic Focus & Region (HQ location).
             4. Ecosystem Role (OEM, SaaS vendor, Tech partner, etc.).
-            5. Software Strategy (Do they develop proprietary SW or mostly buy/integrate third-party?).
+            5. Software Strategy (Proprietary SW vs Third-party/Buy).
+            6. KEY RELATIONSHIPS (Mention notable partners, major clients, or parent/subsidiary companies if found).
 
             Return ONLY a JSON object:
             {
@@ -651,8 +652,8 @@
                 "growth": "Rapid" | "Stable" | "Declining",
                 "core": "Focus areas",
                 "hook": "Strategic entry point",
-                "expertise": "Key1, Key2, Key3",
-                "summary": "The integrated 5-point summary here",
+                "expertise": "Keyword1, Keyword2, Keyword3",
+                "summary": "The integrated 6-point summary here",
                 "description": "Full tactical analysis (Business, Strategy, Fit, Risks)."
             }
         `;
