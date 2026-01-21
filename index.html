@@ -42,6 +42,27 @@
 					<button onclick="exportToExcel()" class="bg-blue-500 hover:bg-blue-600 text-white font-black py-2 px-6 rounded-xl text-[10px] shadow-lg">EXPORT EXCEL (CSV)</button>
                     <button onclick="window.print()" class="bg-slate-800 hover:bg-black text-white font-black py-2 px-6 rounded-xl text-[10px] shadow-lg">PRINT PDF</button>
                     <button onclick="openModalForAdd()" class="bg-blue-600 hover:bg-blue-700 text-white font-black py-2 px-6 rounded-xl text-[10px] shadow-lg">+ NEW LEAD</button>
+					<button onclick="toggleSettings()" class="p-2 text-slate-400 hover:text-slate-900 transition-all" title="API Keys">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" />
+    </svg>
+</button>
+
+<div id="settingsPanel" class="hidden fixed top-16 right-4 bg-white shadow-2xl p-6 rounded-3xl border z-[100] w-72">
+    <h3 class="text-xs font-black uppercase mb-4 tracking-widest">API Configuration</h3>
+    <div class="space-y-4">
+        <div>
+            <label class="text-[9px] font-black text-slate-400 uppercase">Gemini API Key</label>
+            <input type="password" id="setGemini" class="w-full p-2 bg-slate-100 rounded-lg text-xs mt-1">
+        </div>
+        <div>
+            <label class="text-[9px] font-black text-slate-400 uppercase">Jina AI Token</label>
+            <input type="password" id="setJina" class="w-full p-2 bg-slate-100 rounded-lg text-xs mt-1">
+        </div>
+        <button onclick="saveKeys()" class="w-full bg-slate-900 text-white py-3 rounded-xl text-[10px] font-black uppercase">Save Keys</button>
+        <button onclick="clearKeys()" class="w-full text-red-500 text-[9px] font-bold uppercase">Clear All (Logout)</button>
+    </div>
+</div>
                 </div>
                 <div class="flex flex-col items-end">
                     <label class="text-[9px] font-black text-slate-400 uppercase mb-1 italic">Look-alike Baseline (Priority Sorting):</label>
@@ -843,6 +864,33 @@ function smartFillFromText(text, url) {
         btn.disabled = false;
         btn.classList.remove('opacity-50');
         setTimeout(() => { icon.innerText = "🚀"; }, 3000);
+    }
+}
+
+		function toggleSettings() {
+    const panel = document.getElementById('settingsPanel');
+    panel.classList.toggle('hidden');
+    // Підставляємо поточні ключі, якщо вони є
+    document.getElementById('setGemini').value = localStorage.getItem('gemini_api_key') || '';
+    document.getElementById('setJina').value = localStorage.getItem('jina_token') || '';
+}
+
+function saveKeys() {
+    const gemini = document.getElementById('setGemini').value;
+    const jina = document.getElementById('setJina').value;
+    
+    if (gemini) localStorage.setItem('gemini_api_key', gemini);
+    if (jina) localStorage.setItem('jina_token', jina);
+    
+    alert("Keys saved securely in your browser.");
+    toggleSettings();
+}
+
+function clearKeys() {
+    if(confirm("Delete all keys from this browser?")) {
+        localStorage.removeItem('gemini_api_key');
+        localStorage.removeItem('jina_token');
+        location.reload();
     }
 }
 
