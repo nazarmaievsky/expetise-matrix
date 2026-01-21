@@ -229,10 +229,10 @@
                         <option value="Declining">Declining</option>
                     </select>
                 </div>
-                <div class="col-span-2 space-y-1">
-                    <label class="text-[9px] font-black uppercase text-indigo-400 ml-2">AI Strategic Summary</label>
-                    <textarea id="formAiSummary" rows="2" class="w-full p-3 bg-white border rounded-xl text-[11px] font-medium leading-relaxed outline-none" placeholder="AI analysis will appear here after Deep Search..."></textarea>
-                </div>
+               <div class="space-y-1 col-span-2">
+    					<label class="text-[9px] font-black uppercase text-indigo-600 ml-2">AI Strategic Summary (Redundant Data)</label>
+    					<input type="text" id="formAiSummary" class="w-full p-4 bg-indigo-50/50 border border-indigo-100 rounded-2xl outline-none text-xs font-bold text-indigo-900" placeholder="AI Analysis will appear here...">
+			</div>
             </div>
 
             <div class="grid grid-cols-2 gap-4">
@@ -619,19 +619,34 @@
             const jinaData = await responseJina.json();
             const researchText = jinaData.data.map(item => item.content).join('\n').substring(0, 12000);
 
-            const promptText = `Analyze company "${name}". Data: ${researchText}. 
-            STRICT REGIONAL LOGIC: HQ in Europe/Poland -> "EMEA", USA/Canada -> "AMER", China/Asia -> "APAC".
-            Return ONLY JSON: { "type", "role", "region", "share", "maturity", "own_sw", "buy_sw", "revenue", "growth", "core", "hook", "expertise", "summary", "description" }`;
-
-            const responseGroq = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${groqKey}` },
-                body: JSON.stringify({
-                    model: "llama-3.3-70b-versatile",
-                    messages: [{ role: "system", content: "You are a Strategic Analyst. Return ONLY JSON." }, { role: "user", content: promptText }],
-                    response_format: { "type": "json_object" }
-                })
-            });
+            const promptText = `
+    Analyze logistics company "${name}" based on this research: ${researchText}
+    
+    STRICT FORMATTING RULES:
+    1. region: Determine HQ (Europe/Poland -> "EMEA", USA -> "AMER", Asia -> "APAC").
+    2. summary: Create a strategic TL;DR. 
+       STRICT BACKUP RULE: You MUST start the summary with these tags:
+       [Region | Role | Maturity | Own SW: Yes/No | Buy SW: Yes/No]
+       Example: "[EMEA | OEM | High | Own SW: Yes | Buy SW: No] Polish trailer manufacturer with in-house telematics."
+    
+    Return ONLY a JSON object:
+    {
+        "type": "Manufactures HW" | "SaaS/Platform" | "Hybrid Model",
+        "role": "OEM" | "SaaS/Platform" | "Tech Partner",
+        "region": "EMEA" | "AMER" | "APAC" | "GLOBAL",
+        "share": "Low" | "Mid" | "High",
+        "maturity": "Low" | "Med" | "High",
+        "own_sw": "Yes" | "No",
+        "buy_sw": "Yes" | "No",
+        "revenue": "Low" | "Mid" | "High",
+        "growth": "Rapid" | "Stable" | "Declining",
+        "core": "Focus areas",
+        "hook": "Strategic entry point",
+        "expertise": "Key1, Key2",
+        "summary": "The tagged summary string here",
+        "description": "Full analysis text"
+    }
+`;
 
             const result = await responseGroq.json();
             const ai = JSON.parse(result.choices[0].message.content);
@@ -640,7 +655,7 @@
             document.getElementById('formRole').value = ai.role || '';
             document.getElementById('formReg').value = ai.region || 'EMEA';
             document.getElementById('formShare').value = ai.share || '';
-            document.getElementById('formMat').value = ai.maturity || '';
+            document.getElementById('formMat').value = ai.maturity || 'Low';
             document.getElementById('formOwn').value = ai.own_sw || 'No';
             document.getElementById('formBuy').value = ai.buy_sw || 'No';
             document.getElementById('formRevenue').value = ai.revenue || '';
@@ -650,6 +665,7 @@
             document.getElementById('formExp').value = ai.expertise || '';
             document.getElementById('formDesc').value = ai.description || '';
             document.getElementById('formAiSummary').value = ai.summary || '';
+			document.getElementById('formDesc').value = ai.description || '';
 
             icon.innerText = "✅";
         } catch (error) { alert(`Error: ${error.message}`); icon.innerText = "❌"; } 
