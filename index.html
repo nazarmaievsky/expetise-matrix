@@ -781,6 +781,7 @@ function smartFillFromText(text, url) {
         });
 
         const result = await response.json();
+		console.log("Gemini Raw Result:", result);
         const jsonResponse = result.candidates[0].content.parts[0].text.replace(/```json|```/g, '');
         const ai = JSON.parse(jsonResponse);
 
