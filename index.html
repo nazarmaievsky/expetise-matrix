@@ -619,13 +619,35 @@
             const jinaData = await responseJina.json();
             const researchText = jinaData.data.map(item => item.content).join('\n').substring(0, 12000);
 
-            const promptText = `Analyze logistics company "${name}" based on: ${researchText}. 
-        Determine Region (HQ Europe -> EMEA, USA -> AMER, Asia -> APAC).
-        Return ONLY JSON: { 
-            "type", "role", "region", "share", "maturity", 
-            "own_sw", "buy_sw", "revenue", "growth", 
-            "core", "hook", "expertise", "summary", "description" 
-        }`;
+           const promptText = `
+            Analyze the logistics/tech company "${name}" using this research data: ${researchText}.
+            
+            Your task is to provide a strategic profile. 
+            For the "summary" field, write a professional 1-2 sentence executive summary that NATURALLY incorporates:
+            - Their primary business model (e.g., Hardware Manufacturer, SaaS, or Hybrid).
+            - Their estimated revenue scale and market position.
+            - Their geographic focus (HQ and main regions).
+            - Their role in the ecosystem (e.g., OEM, Tech Partner, or Service Provider).
+            - Their software strategy (do they build proprietary systems or rely on third-party solutions?).
+
+            Return ONLY a JSON object:
+            {
+                "type": "Manufactures HW" | "SaaS/Platform" | "Hybrid Model",
+                "role": "OEM" | "SaaS/Platform" | "Tech Partner" | "Consumer",
+                "region": "EMEA" | "AMER" | "APAC" | "GLOBAL",
+                "share": "Low" | "Mid" | "High",
+                "maturity": "Low" | "Med" | "High",
+                "own_sw": "Yes" | "No",
+                "buy_sw": "Yes" | "No",
+                "revenue": "Low" | "Mid" | "High",
+                "growth": "Rapid" | "Stable" | "Declining",
+                "core": "Primary focus areas",
+                "hook": "Strategic entry point for partnership",
+                "expertise": "Keyword1, Keyword2, Keyword3",
+                "summary": "The integrated strategic summary here",
+                "description": "Deep tactical analysis with Business, Strategy, Fit, and Risks sections."
+            }
+        `;
 
             const result = await responseGroq.json();
             const ai = JSON.parse(result.choices[0].message.content);
