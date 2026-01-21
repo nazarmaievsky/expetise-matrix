@@ -348,6 +348,7 @@
 
     function populateDropdown() {
         const select = document.getElementById('lookalikeSelect');
+		if (!select) return;
         const currentVal = select.value;
         select.innerHTML = '<option value="none"> FIND LOOK-ALIKE </option>';
         companies.map(c => c.n).sort().forEach(name => {
