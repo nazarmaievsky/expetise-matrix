@@ -338,7 +338,7 @@
         render(); // Малюємо таблицю
         populateDropdown(); // Оновлюємо випадаючий список
     } else if (error) {
-        console.error("Download error:", error.message);
+        console.error("Can't download", error.message);
     }
 }
 
@@ -471,11 +471,10 @@
         await loadDatabase(); 
         closeModal();
     } catch (err) {
-        console.error("Помилка при збереженні:", err);
-        alert("Не вдалося зберегти дані в базу.");
+        console.error("Can't save", err);
+        alert("Can't save data to DB.");
     }
 };
-
        async function deleteCompany() {
     const idx = parseInt(document.getElementById('editIndex').value);
     if (idx !== -1 && confirm("Permanently delete lead?")) {
@@ -487,11 +486,10 @@
             closeModal();
             populateDropdown(); // Оновлюємо список для Lookalikes
         } catch (err) {
-            alert("Can't delete. Error");
+            alert("Can't delete.");
         }
     }
 }
-
         function render() {
             const body = document.getElementById('matrixBody');
             const fReg = document.getElementById('regFilter').value;
