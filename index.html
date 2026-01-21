@@ -42,41 +42,7 @@
 					<button onclick="exportToExcel()" class="bg-blue-500 hover:bg-blue-600 text-white font-black py-2 px-6 rounded-xl text-[10px] shadow-lg">EXPORT EXCEL (CSV)</button>
                     <button onclick="window.print()" class="bg-slate-800 hover:bg-black text-white font-black py-2 px-6 rounded-xl text-[10px] shadow-lg">PRINT PDF</button>
                     <button onclick="openModalForAdd()" class="bg-blue-600 hover:bg-blue-700 text-white font-black py-2 px-6 rounded-xl text-[10px] shadow-lg">+ NEW LEAD</button>
-					<button onclick="toggleSettings()" class="fixed bottom-6 right-6 bg-white/80 backdrop-blur-md p-4 rounded-full shadow-2xl border border-slate-200 hover:scale-110 transition-all z-50 group">
-    <span class="group-hover:rotate-90 transition-transform duration-500 block">⚙️</span>
-</button>
-
-<div id="settingsPanel" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm hidden">
-    <div class="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-sm overflow-hidden text-left p-8">
-        <div class="flex justify-between items-center mb-6">
-            <h3 class="text-xs font-black uppercase tracking-[0.2em] text-slate-400">API Configuration</h3>
-            <button onclick="toggleSettings()" class="text-slate-300 hover:text-slate-900 text-2xl">&times;</button>
-        </div>
-
-        <div class="space-y-6">
-            <div class="space-y-1">
-                <label class="text-[9px] font-black uppercase text-indigo-600 ml-1">Groq API Key (Primary AI)</label>
-                <input type="password" id="setGroq" class="w-full p-4 bg-slate-50 border rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 text-xs font-mono" placeholder="gsk_...">
-            </div>
-
-            <div class="space-y-1">
-                <label class="text-[9px] font-black uppercase text-blue-600 ml-1">Jina AI Token (Deep Search)</label>
-                <input type="password" id="setJina" class="w-full p-4 bg-slate-50 border rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 text-xs font-mono" placeholder="jina_...">
-            </div>
-
-            <div class="space-y-1">
-                <label class="text-[9px] font-black uppercase text-slate-400 ml-1">Gemini Key (Backup)</label>
-                <input type="password" id="setGemini" class="w-full p-4 bg-slate-50 border rounded-2xl outline-none focus:ring-2 focus:ring-slate-500 text-xs font-mono" placeholder="AIzaSy...">
-            </div>
-
-            <div class="pt-4 space-y-3">
-                <button onclick="saveKeys()" class="w-full bg-slate-900 text-white font-black py-4 rounded-2xl shadow-lg hover:bg-black transition-all uppercase text-[10px] tracking-widest">Save Config</button>
-                <button onclick="clearKeys()" class="w-full text-red-500 font-bold text-[9px] uppercase tracking-tighter hover:underline">Clear all & logout</button>
-            </div>
-        </div>
-    </div>
-</div>
-                </div>
+				</div>
                 <div class="flex flex-col items-end">
                     <label class="text-[9px] font-black text-slate-400 uppercase mb-1 italic">Look-alike Baseline (Priority Sorting):</label>
                     <select id="lookalikeSelect" onchange="runLookalike()" class="p-3 bg-white border-2 border-blue-100 rounded-2xl text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500 min-w-[300px]">
@@ -397,6 +363,33 @@
     </div>
 </footer>
 
+<button onclick="toggleSettings()" class="fixed bottom-6 right-6 bg-white/90 backdrop-blur-md p-4 rounded-full shadow-2xl border border-slate-200 hover:scale-110 transition-all z-[100] group">
+    <span class="group-hover:rotate-90 transition-transform duration-500 block">⚙️</span>
+</button>
+
+<div id="settingsPanel" class="fixed inset-0 z-[150] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm hidden">
+    <div class="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-sm overflow-hidden text-left p-8">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-xs font-black uppercase tracking-[0.2em] text-slate-400">API Configuration</h3>
+            <button onclick="toggleSettings()" class="text-slate-300 hover:text-slate-900 text-2xl">&times;</button>
+        </div>
+        <div class="space-y-6">
+            <div class="space-y-1">
+                <label class="text-[9px] font-black uppercase text-indigo-600 ml-1">Groq API Key</label>
+                <input type="password" id="setGroq" class="w-full p-4 bg-slate-50 border rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 text-xs font-mono" placeholder="gsk_...">
+            </div>
+            <div class="space-y-1">
+                <label class="text-[9px] font-black uppercase text-blue-600 ml-1">Jina AI Token</label>
+                <input type="password" id="setJina" class="w-full p-4 bg-slate-50 border rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 text-xs font-mono" placeholder="jina_...">
+            </div>
+            <div class="pt-4 space-y-3">
+                <button onclick="saveKeys()" class="w-full bg-slate-900 text-white font-black py-4 rounded-2xl shadow-lg hover:bg-black transition-all uppercase text-[10px] tracking-widest">Save Config</button>
+                <button onclick="clearKeys()" class="w-full text-red-500 font-bold text-[9px] uppercase text-center hover:underline">Clear all keys</button>
+            </div>
+        </div>
+    </div>
+</div>
+	
     <script>
 // 1. Ініціалізація (ЛИШЕ ОДИН РАЗ)
     const SB_URL = 'https://eurhcxjqapmgpiaqdciu.supabase.co'; 
@@ -498,7 +491,7 @@
     // НОВІ AI-ПОЛЯ (ті, що в індиго-блоці)
     document.getElementById('formRevenue').value = co.revenue_tier || 'Mid';
     document.getElementById('formGrowth').value = co.growth_rate || 'Stable';
-    document.getElementById('formAiSummary').value = co.ai_strategic_summary || '';
+    document.getElementById('formAiSummary').value = ai.summary || ai.description.slice(0, 100) + '...';
 
     document.getElementById('companyModal').style.display = 'flex';
 }
@@ -761,23 +754,33 @@ async function deepCheckCompanyAI() {
 
         // Промпт для аналізу
         const promptText = `
+            const promptText = `
             As a Logistics Strategic Analyst, analyze company "${name}" based on this data: 
             ${researchText}
             
-            Return ONLY a JSON object (all text in English):
+            STRICT REGIONAL LOGIC:
+            1. Check Headquarters (HQ) and main operations.
+            2. If HQ is in Europe, Middle East, or Africa (e.g., Poland, Germany, UAE) -> "EMEA".
+            3. If HQ is in USA, Canada, or Latin America -> "AMER".
+            4. If HQ is in China, India, Australia, or South-East Asia -> "APAC".
+            5. If the company has equal massive presence on at least 3 continents -> "GLOBAL".
+            
+            Return ONLY a JSON object (language: English):
             {
                 "type": "Manufactures HW" or "SaaS/Platform" or "Hybrid Model",
                 "role": "OEM" or "SaaS/Platform" or "Tech Partner" or "Consumer",
+                "region": "EMEA" or "AMER" or "APAC" or "GLOBAL",
                 "share": "Low" or "Mid" or "High",
                 "maturity": "Low" or "Med" or "High",
                 "own_sw": "Yes" or "No",
                 "buy_sw": "Yes" or "No",
                 "revenue": "Low" or "Mid" or "High",
                 "growth": "Rapid" or "Stable" or "Declining",
-                "core": "Focus areas",
+                "core": "Focus areas (e.g. Semi-trailers, Fleet IT)",
                 "hook": "Strategic entry point",
                 "expertise": "Keyword1, Keyword2, Keyword3",
-                "description": "[AI STRATEGIC ANALYSIS]\\n- BUSINESS: ...\\n- STRATEGY: ...\\n- FIT: ...\\n- RISKS: ...\\n\\nDISCLAIMER: AI-generated."
+                "summary": "One-sentence strategic essence of the company (max 15 words)",
+                "description": "[AI STRATEGIC ANALYSIS]\\n- BUSINESS: ...\\n- STRATEGY: ...\\n- FIT: ...\\n- RISKS: ..."
             }
         `;
 
@@ -804,9 +807,10 @@ async function deepCheckCompanyAI() {
 
         console.log("✅ Step 3: Filling the Intelligence Matrix...");
 
-        // 4. Мапінг даних у форму
+        // Мапінг даних у форму
         document.getElementById('formType').value = ai.type || 'SaaS/Platform';
         document.getElementById('formRole').value = ai.role || 'OEM';
+        document.getElementById('formReg').value = ai.region || 'EMEA'; 
         document.getElementById('formShare').value = ai.share || 'Mid';
         document.getElementById('formMat').value = ai.maturity || 'Low';
         document.getElementById('formOwn').value = ai.own_sw || 'No';
@@ -818,8 +822,8 @@ async function deepCheckCompanyAI() {
         document.getElementById('formExp').value = ai.expertise || '';
         document.getElementById('formDesc').value = ai.description || '';
         
-        // Коротке резюме для нового поля
-        document.getElementById('formAiSummary').value = ai.description.split('\\n')[1] || '';
+        // Використовуємо нове поле "summary" замість split()
+        document.getElementById('formAiSummary').value = ai.summary || '';
 
         icon.innerText = "✅";
 
