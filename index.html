@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚚</text></svg>">
     <title>Expertise Matrix v30.2</title>
 	<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -34,8 +35,10 @@
     <div class="max-w-full mx-auto">
         <header class="mb-10 border-b-2 border-slate-200 pb-8 flex flex-col md:flex-row justify-between items-center gap-6 no-print">
             <div>
-                <h1 class="text-4xl font-black uppercase tracking-tighter italic text-blue-900">Expertise Matrix</h1>
-                <p class="text-slate-500 mt-1 uppercase text-[10px] font-bold tracking-widest italic">Leads analysis • v30.2 </p>
+			<h1 class="text-4xl font-black uppercase tracking-tighter italic text-blue-900 flex items-center gap-3">
+    		Expertise Matrix <span class="animate-bounce text-3xl">🚚</span>
+			</h1>
+			<p class="text-slate-500 mt-1 uppercase text-[10px] font-bold tracking-widest italic">Leads analysis • v30.2 </p>	
             </div>
             <div class="flex flex-col md:items-end gap-3">
                 <div class="flex gap-2">
@@ -203,8 +206,8 @@
                     <div class="flex gap-2">
                         <input type="url" id="formUrl" class="flex-1 p-4 bg-slate-50 border rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 transition-all text-xs font-bold" placeholder="https://...">
                         <button type="button" onclick="deepCheckCompanyAI()" id="deepCheckBtn" class="bg-indigo-600 text-white px-4 rounded-2xl hover:bg-indigo-700 transition-all group" title="Deep AI Research">
-                            <span id="deepIcon" class="inline-block group-hover:scale-125 transition-transform text-lg">🚀</span>
-                        </button>
+    <span id="deepIcon" class="inline-block group-hover:translate-x-1 transition-transform text-lg">🚚</span>
+</button>
                     </div>
                 </div>
             </div>
@@ -391,38 +394,29 @@
 </div>
 	
     <script>
-// 1. Ініціалізація (ЛИШЕ ОДИН РАЗ)
+    // 1. Ініціалізація Supabase
     const SB_URL = 'https://eurhcxjqapmgpiaqdciu.supabase.co'; 
     const SB_KEY = 'sb_publishable_lRTxziDxvYvLzEjaiTvHqA_5Ox0rOht';
-    const sb = window.supabase.createClient('https://eurhcxjqapmgpiaqdciu.supabase.co', 'sb_publishable_lRTxziDxvYvLzEjaiTvHqA_5Ox0rOht');   
+    const sb = window.supabase.createClient(SB_URL, SB_KEY);   
 
     let companies = [];
     let currentLookalike = "none";
 
-    // 2. Ваша функція завантаження (адаптована під хмару)
     async function loadDatabase() {
-    console.log("📡 Синхронізація з Supabase...");
-    const { data, error } = await sb
-        .from('companies')
-        .select('*')
-        .order('n', { ascending: true });
-
-    if (!error && data) {
-        companies = data;
-        render(); // Малюємо таблицю
-        populateDropdown(); // Оновлюємо випадаючий список
-    } else if (error) {
-        console.error("Can't download", error.message);
+        console.log("📡 Синхронізація з Supabase...");
+        const { data, error } = await sb.from('companies').select('*').order('n', { ascending: true });
+        if (!error && data) {
+            companies = data;
+            render();
+            populateDropdown();
+        }
     }
-}
 
-    async function init() {
-        await loadDatabase();
-    }
+    async function init() { await loadDatabase(); }
 
     function populateDropdown() {
         const select = document.getElementById('lookalikeSelect');
-		if (!select) return;
+        if (!select) return;
         const currentVal = select.value;
         select.innerHTML = '<option value="none"> FIND LOOK-ALIKE </option>';
         companies.map(c => c.n).sort().forEach(name => {
@@ -433,452 +427,264 @@
         select.value = currentVal;
     }
 
-       
-        function runLookalike() {
-            currentLookalike = document.getElementById('lookalikeSelect');
-            if (currentLookalike) {
-                currentLookalike = currentLookalike.value;
-            } else {
-                currentLookalike = "none";
-            }
-            render();
-        }
+    function runLookalike() {
+        const select = document.getElementById('lookalikeSelect');
+        currentLookalike = select ? select.value : "none";
+        render();
+    }
 
-        function getSimilarity(co, base) {
-            if (!base) return 0;
-            if (co.n === base.n) return -1;
-            let score = 0;
-            // 1. SW Strategy Match (40%)
-            if (co.b === base.b) score += 40; 
-            // 2. Business Model Match (30%)
-            if (co.t === base.t) score += 30; 
-            // 3. Ecosystem Role & Market Share (25%)
-            if (co.er === base.er) score += 15;
-            if (co.ms === base.ms) score += 10;
-            // 4. Domain Alignment (5%)
-            if (co.c.split(',')[0].trim() === base.c.split(',')[0].trim()) score += 5;
-            return score;
-        }
+    function getSimilarity(co, base) {
+        if (!base) return 0;
+        if (co.n === base.n) return -1;
+        let score = 0;
+        if (co.b === base.b) score += 40; 
+        if (co.t === base.t) score += 30; 
+        if (co.er === base.er) score += 15;
+        if (co.ms === base.ms) score += 10;
+        if (co.c?.split(',')[0].trim() === base.c?.split(',')[0].trim()) score += 5;
+        return score;
+    }
 
-        function openModalForAdd() {
-            document.getElementById('editIndex').value = "-1";
-            document.getElementById('companyForm').reset();
-            document.getElementById('deleteBtn').style.display = 'none';
-            document.getElementById('modalTitle').innerText = "Add Global Target";
-            document.getElementById('companyModal').style.display = 'flex';
-        }
+    function openModalForAdd() {
+        document.getElementById('editIndex').value = "-1";
+        document.getElementById('companyForm').reset();
+        document.getElementById('deleteBtn').style.display = 'none';
+        document.getElementById('modalTitle').innerText = "Add Global Target";
+        document.getElementById('companyModal').style.display = 'flex';
+    }
 
-        function openModalForEdit(idx) {
-    const co = companies[idx];
-    document.getElementById('editIndex').value = idx;
-    document.getElementById('modalTitle').innerText = "Edit Strategy: " + co.n;
-    
-    // Основні поля
-    document.getElementById('formName').value = co.n || '';
-    document.getElementById('formUrl').value = co.u || '';
-    document.getElementById('formType').value = co.t || 'SaaS/Platform';
-    document.getElementById('formReg').value = co.r || 'EMEA';
-    document.getElementById('formRole').value = co.er || 'OEM';
-    document.getElementById('formShare').value = co.ms || 'Mid';
-    document.getElementById('formMat').value = co.m || 'Low';
-    document.getElementById('formOwn').value = co.o || 'No';
-    document.getElementById('formBuy').value = co.b || 'No';
-    document.getElementById('formCore').value = co.c || '';
-    document.getElementById('formEntryPoint').value = co.ep || '';
-    document.getElementById('formExp').value = (co.exp || []).join(', ');
-    document.getElementById('formDesc').value = co.d || '';
+    function openModalForEdit(idx) {
+        const co = companies[idx];
+        document.getElementById('editIndex').value = idx;
+        document.getElementById('deleteBtn').style.display = 'block';
+        document.getElementById('modalTitle').innerText = "Edit Strategy: " + co.n;
+        
+        document.getElementById('formName').value = co.n || '';
+        document.getElementById('formUrl').value = co.u || '';
+        document.getElementById('formType').value = co.t || 'SaaS/Platform';
+        document.getElementById('formReg').value = co.r || 'EMEA';
+        document.getElementById('formRole').value = co.er || 'OEM';
+        document.getElementById('formShare').value = co.ms || 'Mid';
+        document.getElementById('formMat').value = co.m || 'Low';
+        document.getElementById('formOwn').value = co.o || 'No';
+        document.getElementById('formBuy').value = co.b || 'No';
+        document.getElementById('formCore').value = co.c || '';
+        document.getElementById('formEntryPoint').value = co.ep || '';
+        document.getElementById('formExp').value = (co.exp || []).join(', ');
+        document.getElementById('formDesc').value = co.d || '';
+        document.getElementById('formRevenue').value = co.revenue_tier || 'Mid';
+        document.getElementById('formGrowth').value = co.growth_rate || 'Stable';
+        document.getElementById('formAiSummary').value = co.ai_strategic_summary || '';
 
-    // НОВІ AI-ПОЛЯ (ті, що в індиго-блоці)
-    document.getElementById('formRevenue').value = co.revenue_tier || 'Mid';
-    document.getElementById('formGrowth').value = co.growth_rate || 'Stable';
-    document.getElementById('formAiSummary').value = ai.summary || ai.description.slice(0, 100) + '...';
+        document.getElementById('companyModal').style.display = 'flex';
+    }
 
-    document.getElementById('companyModal').style.display = 'flex';
-}
+    function closeModal() { document.getElementById('companyModal').style.display = 'none'; }
 
-        function closeModal() { document.getElementById('companyModal').style.display = 'none'; }
-
-        document.getElementById('companyForm').onsubmit = async (e) => {
-    e.preventDefault();
-    const idx = parseInt(document.getElementById('editIndex').value);
-    
-    const co = {
-        n: document.getElementById('formName').value,
-        u: document.getElementById('formUrl').value,
-        t: document.getElementById('formType').value,
-        r: document.getElementById('formReg').value,
-        er: document.getElementById('formRole').value,
-        ms: document.getElementById('formShare').value,
-        m: document.getElementById('formMat').value,
-        o: document.getElementById('formOwn').value,
-        b: document.getElementById('formBuy').value,
-        c: document.getElementById('formCore').value,
-        ep: document.getElementById('formEntryPoint').value,
-        exp: document.getElementById('formExp').value.split(',').map(s => s.trim()).filter(s => s !== ""),
-        d: document.getElementById('formDesc').value,
-        // Нові колонки для бази:
-        revenue_tier: document.getElementById('formRevenue').value,
-        growth_rate: document.getElementById('formGrowth').value,
-        ai_strategic_summary: document.getElementById('formAiSummary').value,
-        sig: "Warm"
+    document.getElementById('companyForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const idx = parseInt(document.getElementById('editIndex').value);
+        const co = {
+            n: document.getElementById('formName').value,
+            u: document.getElementById('formUrl').value,
+            t: document.getElementById('formType').value,
+            r: document.getElementById('formReg').value,
+            er: document.getElementById('formRole').value,
+            ms: document.getElementById('formShare').value,
+            m: document.getElementById('formMat').value,
+            o: document.getElementById('formOwn').value,
+            b: document.getElementById('formBuy').value,
+            c: document.getElementById('formCore').value,
+            ep: document.getElementById('formEntryPoint').value,
+            exp: document.getElementById('formExp').value.split(',').map(s => s.trim()).filter(s => s !== ""),
+            d: document.getElementById('formDesc').value,
+            revenue_tier: document.getElementById('formRevenue').value,
+            growth_rate: document.getElementById('formGrowth').value,
+            ai_strategic_summary: document.getElementById('formAiSummary').value,
+            sig: "Warm"
+        };
+        try {
+            if (idx === -1) { await sb.from('companies').insert([co]); } 
+            else { await sb.from('companies').update(co).eq('id', companies[idx].id); }
+            await loadDatabase(); 
+            closeModal();
+        } catch (err) { alert("Error saving data"); }
     };
 
-    try {
-        if (idx === -1) {
-            await sb.from('companies').insert([co]);
-        } else {
-            await sb.from('companies').update(co).eq('id', companies[idx].id);
-        }
-        await loadDatabase(); 
-        closeModal();
-    } catch (err) {
-        console.error(err);
-        alert("Error saving data");
-    }
-};
-       async function deleteCompany() {
-    const idx = parseInt(document.getElementById('editIndex').value);
-    if (idx !== -1 && confirm("Permanently delete lead?")) {
-        try {
-            const id = companies[idx].id; // Беремо ID запису в базі
-            await sb.from('companies').delete().eq('id', id);
-            
-            await loadDatabase(); // Оновлюємо список
+    async function deleteCompany() {
+        const idx = parseInt(document.getElementById('editIndex').value);
+        if (idx !== -1 && confirm("Permanently delete lead?")) {
+            await sb.from('companies').delete().eq('id', companies[idx].id);
+            await loadDatabase();
             closeModal();
-            populateDropdown(); // Оновлюємо список для Lookalikes
-        } catch (err) {
-            alert("Can't delete.");
         }
     }
-}
-        function render() {
-            const body = document.getElementById('matrixBody');
-            const fReg = document.getElementById('regFilter').value;
-            const fMat = document.getElementById('matFilter').value;
-            const fRole = document.getElementById('roleFilter').value;
-            const fShare = document.getElementById('shareFilter').value;
-            const fExp = document.getElementById('expFilter').value;
 
-            const baseCo = currentLookalike !== "none" ? companies.find(c => c.n === currentLookalike) : null;
-            
-            let data = companies.map((co, originalIdx) => {
-                const rM = fReg === 'all' || co.r === fReg;
-                const mM = fMat === 'all' || co.m === fMat;
-                const roleMatch = fRole === 'all' || (co.er || "").includes(fRole);
-                const shareMatch = fShare === 'all' || co.ms === fShare;
-                return { ...co, originalIdx, visible: rM && mM && roleMatch && shareMatch, ssm: getSimilarity(co, baseCo) };
-            });
+    function render() {
+        const body = document.getElementById('matrixBody');
+        const fReg = document.getElementById('regFilter').value;
+        const fMat = document.getElementById('matFilter').value;
+        const fRole = document.getElementById('roleFilter').value;
+        const fShare = document.getElementById('shareFilter').value;
+        const fExp = document.getElementById('expFilter').value;
 
-            data.sort((a, b) => b.ssm - a.ssm);
-
-            body.innerHTML = '';
-            let count = 0;
-
-            data.forEach((co) => {
-                if (!co.visible) return;
-                count++;
-                const expMatch = fExp === 'all' || (co.exp || []).includes(fExp);
-                const row = document.createElement('tr');
-                const s = co.ssm;
-                const scoreClass = s >= 70 ? 'score-high' : s >= 20 ? 'score-med' : 'score-low';
-                const msClass = co.ms === 'High' ? 'ms-high' : co.ms === 'Mid' ? 'ms-mid' : 'ms-low';
-                
-                row.className = `group hover:bg-slate-50 transition-all ${expMatch ? '' : 'opacity-20 grayscale'} ${s >= 70 ? 'row-lookalike' : ''}`;
-                row.innerHTML = `
-                    <td class="p-6">
-                        <a href="${co.u}" target="_blank" class="text-base font-black uppercase tracking-tighter text-slate-800 hover:text-blue-600 transition-all italic underline decoration-slate-200 decoration-2 underline-offset-4">
-                            ${co.n}
-                        </a>
-                        <div class="flex flex-col gap-1 mt-1">
-                            <div class="flex items-center gap-2">
-                                <span class="text-[9px] font-black px-2 py-0.5 bg-slate-100 text-slate-500 rounded uppercase border border-slate-200">${co.er || 'SaaS'}</span>
-                                <span class="text-[9px] text-slate-400 font-bold uppercase tracking-widest">${co.r}</span>
-                            </div>
-                            <span class="text-[9px] font-bold text-slate-400 italic tracking-tight uppercase">${co.t}</span>
-                        </div>
-                        <button onclick="toggleDetails(${co.originalIdx})" class="mt-2 text-[9px] text-blue-500 font-black uppercase hover:underline no-print">Summary & Relationships</button>
-                        <div id="details-${co.originalIdx}" class="details-box">${co.d}</div>
-                    </td>
-                    <td class="p-4">
-                        <div class="flex justify-center">
-                            <div class="score-circle ${scoreClass}">${s === -1 ? 'BASE' : s + '%'}</div>
-                        </div>
-                    </td>
-                    <td class="p-4 text-center">
-                        <span class="text-[10px] uppercase font-black ${msClass}">${co.ms || 'Mid'}</span>
-                    </td>
-                    <td class="p-4 text-center">
-						<div class="text-[10px] font-black ${co.o === 'Yes' ? 'text-blue-600' : 'text-slate-300'}">OWN: ${co.o === 'Yes' ? '✓' : '×'}</div>
-						<div class="text-[10px] font-black ${co.b === 'Yes' ? 'text-emerald-600' : 'text-slate-300'}">BUY: ${co.b === 'Yes' ? '✓' : '×'}</div>
-					</td>
-                    <td class="p-4">
-                        <div class="flex flex-col gap-1">
-                            <span class="${co.sig === 'Hot' ? 'badge-hot' : 'bg-amber-100 text-amber-700 px-2 py-0.5 rounded-md text-[9px] font-black'} uppercase tracking-tighter">${co.sig}</span>
-                            <span class="text-[9px] font-black text-slate-400 uppercase italic">Mat: ${co.m}</span>
-                        </div>
-                    </td>
-                    <td class="p-6"><div class="text-xs font-bold text-blue-900 uppercase italic leading-tight">${co.c}</div></td>
-                    <td class="p-6">
-                        <div class="text-[10px] font-black text-emerald-800 leading-relaxed">${(co.exp || []).join(' • ')}</div>
-                        <div class="entry-point">" ${co.ep} "</div>
-                    </td>
-                    <td class="p-6 text-center no-print">
-                        <button onclick="openModalForEdit(${co.originalIdx})" class="p-3 bg-white border border-slate-200 rounded-2xl shadow-sm group-hover:bg-slate-900 group-hover:text-white transition-all">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                        </button>
-                    </td>
-                `;
-                body.appendChild(row);
-            });
-            document.getElementById('counter').innerText = `Inventory: ${count} Verified Companies`;
-        }
-
-        function toggleDetails(idx) { document.getElementById(`details-${idx}`).classList.toggle('open'); }
-		
-		function autoDetectExpertise() {
-            const desc = document.getElementById('formDesc').value.toLowerCase();
-            const domains = document.getElementById('formCore').value.toLowerCase();
-            const fullText = desc + " " + domains;
-            
-            const mapping = {
-                "Fleet Management Solutions": ["gps", "tracking", "telematics", "fleet", "visibility", "routing", "fms"],
-                "Asset management": ["container", "trailer", "wagon", "asset", "inventory", "reefer", "hub", "warehouse"],
-                "Compliance & Regulations": ["eld", "compliance", "regulation", "legal", "gdp", "tachograph", "hos", "security"],
-                "Fleet Operations Management": ["workflow", "efficiency", "optimization", "driver", "dispatch", "operations", "tms"],
-                "Software Integration": ["api", "erp", "integration", "platform", "partner", "connection", "data flow", "orchestration"]
-            };
-
-            let detected = [];
-
-            for (const [expertise, keywords] of Object.entries(mapping)) {
-                if (keywords.some(word => fullText.includes(word))) {
-                    detected.push(expertise);
-                }
-            }
-
-            if (detected.length === 0 && document.getElementById('formRole').value === "OEM") {
-                detected.push("Software Integration");
-            }
-
-            document.getElementById('formExp').value = detected.join(', ');
-        }
-
-	function exportToExcel() {
-    // 1. Визначаємо заголовки стовпців
-    const headers = [
-        "Company Name", "URL", "Region", "Ecosystem Role", "Business Model", "Market Share", 
-        "Maturity", "Own SW", "Buy SW", "Industry Focus", "Strategic Hook", 
-        "Expertise Match", "Summary & Relationships"
-    ];
-
-    // 2. Готуємо дані
-    const rows = companies.map(co => [
-        `"${co.n}"`,                          // Name
-        `"${co.u}"`,                          // URL
-        `"${co.r}"`,                          // Region
-        `"${co.er}"`,                         // Role
-        `"${co.t}"`,                          // Business Model
-        `"${co.ms}"`,                         // Market Share
-        `"${co.m}"`,                          // Maturity
-        `"${co.o}"`,                          // Own SW
-        `"${co.b}"`,                          // Buy SW
-        `"${co.c.replace(/"/g, '""')}"`,      // Focus Domains
-        `"${co.ep.replace(/"/g, '""')}"`,     // Entry Point
-        `"${(co.exp || []).join(', ')}"`,     // Expertise Match
-        `"${co.d.replace(/"/g, '""')}"`       // Description (Relationships)
-    ]);
-
-    // 3. Формуємо фінальний CSV рядок
-    // Додаємо "\uFEFF" для кирилиці ТА "sep=;\n" для автоматичного розділення стовпців в Excel
-    const csvContent = "\uFEFF" + "sep=;\n" + [headers.join(";"), ...rows.map(e => e.join(";"))].join("\n");
-
-    // 4. Створюємо лінк для завантаження
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", "Expertise_Matrix_Report_" + new Date().toISOString().slice(0,10) + ".csv");
-    document.body.appendChild(link);
-    
-    link.click();
-    document.body.removeChild(link);
-}
-
-
-async function deepCheckCompanyAI() {
-    // 1. Елементи інтерфейсу
-    const name = document.getElementById('formName').value;
-    const url = document.getElementById('formUrl').value;
-    const btn = document.getElementById('deepCheckBtn');
-    const icon = document.getElementById('deepIcon');
-
-    // 2. Валідація полів форми
-    if (!name || !url) {
-        alert("Please enter Name and URL first.");
-        return;
-    }
-
-    // 3. Отримання ключів з LocalStorage
-    let groqKey = localStorage.getItem('groq_api_key');
-    let jinaToken = localStorage.getItem('jina_token');
-
-      if (!groqKey || !jinaToken) {
-        alert("Please configure Groq and Jina keys in the Settings (⚙️ icon) first.");
-        toggleSettings(); // Це автоматично відкриє вашу нову панель
-        return; // Це зупинить функцію, щоб вона не видала помилку пізніше
-    }
-   
-    // 4. Початок роботи (тільки якщо ключі пройшли перевірку вище)
-    btn.disabled = true;
-    btn.classList.add('opacity-50');
-    icon.innerText = "⏳";
-
-    try {
-        console.log("🔍 Step 1: Deep Research via Jina...");
-       
+        const baseCo = currentLookalike !== "none" ? companies.find(c => c.n === currentLookalike) : null;
         
-        // Збір даних з мережі
-        const searchQuery = `site:${url} OR "${name}" logistics technology software strategy build vs buy`;
-        const responseJina = await fetch(`https://s.jina.ai/${encodeURIComponent(searchQuery)}`, {
-            headers: { 
-                'Authorization': `Bearer ${jinaToken}`,
-                'Accept': 'application/json'
-            }
+        let data = companies.map((co, originalIdx) => {
+            const rM = fReg === 'all' || co.r === fReg;
+            const mM = fMat === 'all' || co.m === fMat;
+            const roleMatch = fRole === 'all' || (co.er || "").includes(fRole);
+            const shareMatch = fShare === 'all' || co.ms === fShare;
+            return { ...co, originalIdx, visible: rM && mM && roleMatch && shareMatch, ssm: getSimilarity(co, baseCo) };
         });
 
-        if (!responseJina.ok) throw new Error(`Jina Search failed: ${responseJina.status}`);
-        const jinaData = await responseJina.json();
-        const researchText = jinaData.data.map(item => item.content).join('\n').substring(0, 12000);
+        data.sort((a, b) => b.ssm - a.ssm);
+        body.innerHTML = '';
+        let count = 0;
 
-        console.log("🚀 Step 2: Strategic Analysis via Groq (Llama 3.3)...");
-
-        // Промпт для аналізу
-        const promptText = `
-            const promptText = `
-            As a Logistics Strategic Analyst, analyze company "${name}" based on this data: 
-            ${researchText}
+        data.forEach((co) => {
+            if (!co.visible) return;
+            count++;
+            const expMatch = fExp === 'all' || (co.exp || []).includes(fExp);
+            const row = document.createElement('tr');
+            const s = co.ssm;
+            const scoreClass = s >= 70 ? 'score-high' : s >= 20 ? 'score-med' : 'score-low';
+            const msClass = co.ms === 'High' ? 'ms-high' : co.ms === 'Mid' ? 'ms-mid' : 'ms-low';
             
-            STRICT REGIONAL LOGIC:
-            1. Check Headquarters (HQ) and main operations.
-            2. If HQ is in Europe, Middle East, or Africa (e.g., Poland, Germany, UAE) -> "EMEA".
-            3. If HQ is in USA, Canada, or Latin America -> "AMER".
-            4. If HQ is in China, India, Australia, or South-East Asia -> "APAC".
-            5. If the company has equal massive presence on at least 3 continents -> "GLOBAL".
-            
-            Return ONLY a JSON object (language: English):
-            {
-                "type": "Manufactures HW" or "SaaS/Platform" or "Hybrid Model",
-                "role": "OEM" or "SaaS/Platform" or "Tech Partner" or "Consumer",
-                "region": "EMEA" or "AMER" or "APAC" or "GLOBAL",
-                "share": "Low" or "Mid" or "High",
-                "maturity": "Low" or "Med" or "High",
-                "own_sw": "Yes" or "No",
-                "buy_sw": "Yes" or "No",
-                "revenue": "Low" or "Mid" or "High",
-                "growth": "Rapid" or "Stable" or "Declining",
-                "core": "Focus areas (e.g. Semi-trailers, Fleet IT)",
-                "hook": "Strategic entry point",
-                "expertise": "Keyword1, Keyword2, Keyword3",
-                "summary": "One-sentence strategic essence of the company (max 15 words)",
-                "description": "[AI STRATEGIC ANALYSIS]\\n- BUSINESS: ...\\n- STRATEGY: ...\\n- FIT: ...\\n- RISKS: ..."
-            }
-        `;
-
-        const responseGroq = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${groqKey}`
-            },
-            body: JSON.stringify({
-                model: "llama-3.3-70b-versatile",
-                messages: [
-                    { role: "system", content: "You are a Strategic Analyst. Return ONLY JSON." },
-                    { role: "user", content: promptText }
-                ],
-                response_format: { "type": "json_object" } // ГАРАНТІЯ ЧИСТОГО JSON
-            })
+            row.className = `group hover:bg-slate-50 transition-all ${expMatch ? '' : 'opacity-20 grayscale'} ${s >= 70 ? 'row-lookalike' : ''}`;
+            row.innerHTML = `
+                <td class="p-6">
+                    <a href="${co.u}" target="_blank" class="text-base font-black uppercase tracking-tighter text-slate-800 hover:text-blue-600 transition-all italic underline decoration-slate-200 decoration-2 underline-offset-4">${co.n}</a>
+                    <div class="flex flex-col gap-1 mt-1">
+                        <div class="flex items-center gap-2">
+                            <span class="text-[9px] font-black px-2 py-0.5 bg-slate-100 text-slate-500 rounded uppercase border border-slate-200">${co.er || 'SaaS'}</span>
+                            <span class="text-[9px] text-slate-400 font-bold uppercase tracking-widest">${co.r}</span>
+                        </div>
+                    </div>
+                    <button onclick="toggleDetails(${co.originalIdx})" class="mt-2 text-[9px] text-blue-500 font-black uppercase hover:underline no-print">Summary & Relationships</button>
+                    <div id="details-${co.originalIdx}" class="details-box">${co.d}</div>
+                </td>
+                <td class="p-4"><div class="flex justify-center"><div class="score-circle ${scoreClass}">${s === -1 ? 'BASE' : s + '%'}</div></div></td>
+                <td class="p-4 text-center"><span class="text-[10px] uppercase font-black ${msClass}">${co.ms || 'Mid'}</span></td>
+                <td class="p-4 text-center">
+                    <div class="text-[10px] font-black ${co.o === 'Yes' ? 'text-blue-600' : 'text-slate-300'}">OWN: ${co.o === 'Yes' ? '✓' : '×'}</div>
+                    <div class="text-[10px] font-black ${co.b === 'Yes' ? 'text-emerald-600' : 'text-slate-300'}">BUY: ${co.b === 'Yes' ? '✓' : '×'}</div>
+                </td>
+                <td class="p-4">
+                    <div class="flex flex-col gap-1">
+                        <span class="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-tighter">${co.sig}</span>
+                        <span class="text-[9px] font-black text-slate-400 uppercase italic">Mat: ${co.m}</span>
+                    </div>
+                </td>
+                <td class="p-6"><div class="text-xs font-bold text-blue-900 uppercase italic leading-tight">${co.c}</div></td>
+                <td class="p-6">
+                    <div class="text-[10px] font-black text-emerald-800 leading-relaxed">${(co.exp || []).join(' • ')}</div>
+                    <div class="entry-point">" ${co.ep} "</div>
+                </td>
+                <td class="p-6 text-center no-print">
+                    <button onclick="openModalForEdit(${co.originalIdx})" class="p-3 bg-white border border-slate-200 rounded-2xl shadow-sm group-hover:bg-slate-900 group-hover:text-white transition-all">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                    </button>
+                </td>
+            `;
+            body.appendChild(row);
         });
-
-        const result = await responseGroq.json();
-        if (result.error) throw new Error(result.error.message);
-
-        const ai = JSON.parse(result.choices[0].message.content);
-
-        console.log("✅ Step 3: Filling the Intelligence Matrix...");
-
-        // Мапінг даних у форму
-        document.getElementById('formType').value = ai.type || 'SaaS/Platform';
-        document.getElementById('formRole').value = ai.role || 'OEM';
-        document.getElementById('formReg').value = ai.region || 'EMEA'; 
-        document.getElementById('formShare').value = ai.share || 'Mid';
-        document.getElementById('formMat').value = ai.maturity || 'Low';
-        document.getElementById('formOwn').value = ai.own_sw || 'No';
-        document.getElementById('formBuy').value = ai.buy_sw || 'No';
-        document.getElementById('formRevenue').value = ai.revenue || 'Mid';
-        document.getElementById('formGrowth').value = ai.growth || 'Stable';
-        document.getElementById('formCore').value = ai.core || '';
-        document.getElementById('formEntryPoint').value = ai.hook || '';
-        document.getElementById('formExp').value = ai.expertise || '';
-        document.getElementById('formDesc').value = ai.description || '';
-        
-        // Використовуємо нове поле "summary" замість split()
-        document.getElementById('formAiSummary').value = ai.summary || '';
-
-        icon.innerText = "✅";
-
-    } catch (error) {
-        console.error("GROQ ANALYTICS ERROR:", error);
-        alert(`Analysis Error: ${error.message}`);
-        icon.innerText = "❌";
-    } finally {
-        btn.disabled = false;
-        btn.classList.remove('opacity-50');
-        setTimeout(() => { icon.innerText = "🚀"; }, 3000);
+        document.getElementById('counter').innerText = `Inventory: ${count} Verified Companies`;
     }
-}
 
-// Відкрити/Закрити панель
-function toggleSettings() {
-    const panel = document.getElementById('settingsPanel');
-    const isHidden = panel.classList.contains('hidden');
-    
-    if (isHidden) {
-        // Заповнюємо поля поточними значеннями з пам'яті
-        document.getElementById('setGroq').value = localStorage.getItem('groq_api_key') || '';
-        document.getElementById('setJina').value = localStorage.getItem('jina_token') || '';
-        document.getElementById('setGemini').value = localStorage.getItem('gemini_api_key') || '';
-        panel.classList.remove('hidden');
-    } else {
-        panel.classList.add('hidden');
+    function toggleDetails(idx) { document.getElementById(`details-${idx}`).classList.toggle('open'); }
+
+    async function deepCheckCompanyAI() {
+        const name = document.getElementById('formName').value;
+        const url = document.getElementById('formUrl').value;
+        const btn = document.getElementById('deepCheckBtn');
+        const icon = document.getElementById('deepIcon');
+
+        const groqKey = localStorage.getItem('groq_api_key');
+        const jinaToken = localStorage.getItem('jina_token');
+
+        if (!groqKey || !jinaToken) {
+            alert("Please configure Groq and Jina keys in the Settings (⚙️ icon) first.");
+            toggleSettings();
+            return;
+        }
+
+        btn.disabled = true; icon.innerText = "⏳";
+
+        try {
+            const searchQuery = `site:${url} OR "${name}" logistics technology software strategy HQ location`;
+            const responseJina = await fetch(`https://s.jina.ai/${encodeURIComponent(searchQuery)}`, {
+                headers: { 'Authorization': `Bearer ${jinaToken}`, 'Accept': 'application/json' }
+            });
+            const jinaData = await responseJina.json();
+            const researchText = jinaData.data.map(item => item.content).join('\n').substring(0, 12000);
+
+            const promptText = `Analyze company "${name}". Data: ${researchText}. 
+            STRICT REGIONAL LOGIC: HQ in Europe/Poland -> "EMEA", USA/Canada -> "AMER", China/Asia -> "APAC".
+            Return ONLY JSON: { "type", "role", "region", "share", "maturity", "own_sw", "buy_sw", "revenue", "growth", "core", "hook", "expertise", "summary", "description" }`;
+
+            const responseGroq = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${groqKey}` },
+                body: JSON.stringify({
+                    model: "llama-3.3-70b-versatile",
+                    messages: [{ role: "system", content: "You are a Strategic Analyst. Return ONLY JSON." }, { role: "user", content: promptText }],
+                    response_format: { "type": "json_object" }
+                })
+            });
+
+            const result = await responseGroq.json();
+            const ai = JSON.parse(result.choices[0].message.content);
+
+            document.getElementById('formType').value = ai.type || '';
+            document.getElementById('formRole').value = ai.role || '';
+            document.getElementById('formReg').value = ai.region || 'EMEA';
+            document.getElementById('formShare').value = ai.share || '';
+            document.getElementById('formMat').value = ai.maturity || '';
+            document.getElementById('formOwn').value = ai.own_sw || 'No';
+            document.getElementById('formBuy').value = ai.buy_sw || 'No';
+            document.getElementById('formRevenue').value = ai.revenue || '';
+            document.getElementById('formGrowth').value = ai.growth || '';
+            document.getElementById('formCore').value = ai.core || '';
+            document.getElementById('formEntryPoint').value = ai.hook || '';
+            document.getElementById('formExp').value = ai.expertise || '';
+            document.getElementById('formDesc').value = ai.description || '';
+            document.getElementById('formAiSummary').value = ai.summary || '';
+
+            icon.innerText = "✅";
+        } catch (error) { alert(`Error: ${error.message}`); icon.innerText = "❌"; } 
+        finally { btn.disabled = false; setTimeout(() => { icon.innerText = "🚚"; }, 3000); }
     }
-}
 
-// Зберегти в LocalStorage
-function saveKeys() {
-    const groq = document.getElementById('setGroq').value.trim();
-    const jina = document.getElementById('setJina').value.trim();
-    const gemini = document.getElementById('setGemini').value.trim();
-
-    if (groq) localStorage.setItem('groq_api_key', groq);
-    if (jina) localStorage.setItem('jina_token', jina);
-    if (gemini) localStorage.setItem('gemini_api_key', gemini);
-
-    alert("Configuration updated successfully! 🚀");
-    toggleSettings();
-}
-
-// Видалити все (безпека)
-function clearKeys() {
-    if (confirm("This will delete all API keys from this browser. Continue?")) {
-        localStorage.clear();
-        alert("LocalStorage wiped.");
-        location.reload();
+    function toggleSettings() {
+        const panel = document.getElementById('settingsPanel');
+        if (panel.classList.contains('hidden')) {
+            document.getElementById('setGroq').value = localStorage.getItem('groq_api_key') || '';
+            document.getElementById('setJina').value = localStorage.getItem('jina_token') || '';
+            panel.classList.remove('hidden');
+        } else { panel.classList.add('hidden'); }
     }
-}
 
-	    init();
-	
-    </script>
+    function saveKeys() {
+        localStorage.setItem('groq_api_key', document.getElementById('setGroq').value.trim());
+        localStorage.setItem('jina_token', document.getElementById('setJina').value.trim());
+        alert("Saved! 🚀"); toggleSettings();
+    }
+
+    function clearKeys() { if (confirm("Clear keys?")) { localStorage.clear(); location.reload(); } }
+
+    function exportToExcel() {
+        const headers = ["Name", "URL", "Region", "Role", "Model", "Share", "Maturity", "Own", "Buy", "Focus", "Hook", "Exp", "Desc"];
+        const rows = companies.map(co => [ `"${co.n}"`, `"${co.u}"`, `"${co.r}"`, `"${co.er}"`, `"${co.t}"`, `"${co.ms}"`, `"${co.m}"`, `"${co.o}"`, `"${co.b}"`, `"${co.c}"`, `"${co.ep}"`, `"${(co.exp || []).join(', ')}"`, `"${co.d}"` ]);
+        const csvContent = "\uFEFF" + "sep=;\n" + [headers.join(";"), ...rows.map(e => e.join(";"))].join("\n");
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "Expertise_Matrix_" + new Date().toISOString().slice(0,10) + ".csv";
+        link.click();
+    }
+
+    init();
+</script>
 </body>
 </html>
