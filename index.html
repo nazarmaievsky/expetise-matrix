@@ -709,38 +709,41 @@ function render() {
 
         // 2. Аналіз через Groq
         const promptText = `
-    Analyze the company "${name}" based on this specific research: ${researchText}.
+    Analyze the company "${name}" based ONLY on this research: ${researchText}
 
-    STRICT GUIDELINES:
-    1. HIERARCHY OF TRUTH: Your primary source is the provided research. If the research mentions a specific industry (e.g., Pharma, Cold-chain), DO NOT substitute it with another (e.g., Agriculture).
-    2. FACTUAL ANCHORING: If the research is brief, do not invent facts. Instead, use your general knowledge ONLY to categorize the existing facts into the requested strategic points.
-    3. SUMMARY CONSTRAINTS: The summary must be a cohesive 2-sentence narrative.
+STRICT INSTRUCTIONS:
+1. FACTUAL ONLY: You must use only facts and exact statements found INSIDE the provided research. You are absolutely NOT allowed to supplement with general world knowledge or guesses.
+2. NO HALLUCINATIONS: If a parameter/field cannot be confidently extracted from the research, you MUST return the value "UNKNOWN" for that field. You can use public information if it related to analysed company
+3. NO SYNONYMS: Only copy words or exactly rephrase what is present in the research, but do NOT infer or paraphrase beyond what is written.
+4. NO INDUSTRY ASSUMPTIONS: Never assign a market, industry, or role unless this is clearly mentioned in the research.
+5. For the "summary" and "description" fields, if the research does not cover all required points, use only what is factual and write "UNKNOWN" for all missing points.
 
-    TASK: Create a strategic profile.
-    For the "summary" field, write a professional executive summary covering exactly these 6 points:
-    1. Business Model (e.g., Manufacturer HW, SaaS, or Hybrid).
-    2. Revenue Scale/Tier (e.g., Global leader, Mid-size, etc.).
-    3. Geographic Focus & Region (HQ location).
-    4. Ecosystem Role (OEM, SaaS vendor, Tech partner, etc.).
-    5. Software Strategy (Proprietary SW vs Third-party/Buy).
-    6. KEY RELATIONSHIPS (Partners, major clients, or parent/subsidiary companies).
+Return ONLY a JSON object using ALL fields below. Even "UNKNOWN" must be present where data is missing:
 
-    Return ONLY a JSON object:
-    {
-        "type": "Manufactures HW" | "SaaS/Platform" | "Hybrid Model",
-        "role": "OEM" | "SaaS/Platform" | "Tech Partner" | "Consumer",
-        "region": "EMEA" | "AMER" | "APAC" | "GLOBAL",
-        "share": "Low" | "Mid" | "High",
-        "maturity": "Low" | "Med" | "High",
-        "own_sw": "Yes" | "No",
-        "buy_sw": "Yes" | "No",
-        "revenue": "Low" | "Mid" | "High",
-        "growth": "Rapid" | "Stable" | "Declining",
-        "core": "Focus areas",
-        "hook": "Strategic entry point",
-        "expertise": "Keyword1, Keyword2, Keyword3",
-        "summary": "The integrated 6-point summary here",
-        "description": "Short tactical analysis (Business, Strategy, Fit, Risks) strictly based on provided facts."
+{
+    "type": "Manufactures HW" | "SaaS/Platform" | "Hybrid Model" | "UNKNOWN",
+    "role": "OEM" | "SaaS/Platform" | "Tech Partner" | "Consumer" | "UNKNOWN",
+    "region": "EMEA" | "AMER" | "APAC" | "GLOBAL" | "UNKNOWN",
+    "share": "Low" | "Mid" | "High" | "UNKNOWN",
+    "maturity": "Low" | "Med" | "High" | "UNKNOWN",
+    "own_sw": "Yes" | "No" | "UNKNOWN",
+    "buy_sw": "Yes" | "No" | "UNKNOWN",
+    "revenue": "Low" | "Mid" | "High" | "UNKNOWN",
+    "growth": "Rapid" | "Stable" | "Declining" | "UNKNOWN",
+    "core": "string" | "UNKNOWN",
+    "hook": "string" | "UNKNOWN",
+    "expertise": "string" | "UNKNOWN",
+    "summary": "string" | "UNKNOWN",
+    "description": "string" | "UNKNOWN"
+}
+
+EXAMPLES:
+If the research says "company size is large and they operate in logistics, but no numbers or regions are given", then:
+- "share": "UNKNOWN"
+- "region": "UNKNOWN"
+- all other missing fields: "UNKNOWN"
+
+DO NOT return fields not present in this list. DO NOT insert any explanation, comments, or additional text.
     }
 `;
 
