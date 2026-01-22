@@ -675,11 +675,15 @@ function toggleDetails(index) {
     const btn = document.getElementById('deepCheckBtn');
     const icon = document.getElementById('deepIcon');
 
+    // Отримуємо існуючий контекст із бази для заземлення (Hierarchy of Truth)
+    const idx = parseInt(document.getElementById('editIndex').value);
+    const existingKnowledge = idx !== -1 ? (companies[idx].ai_strategic_summary || companies[idx].d || "") : "";
+
     const groqKey = localStorage.getItem('groq_api_key');
     const jinaToken = localStorage.getItem('jina_token');
 
     if (!groqKey || !jinaToken) {
-        alert("Please, add Groq та Jina API keys in settings (⚙️).");
+        alert("Please, add Groq and Jina API keys in settings (⚙️).");
         toggleSettings();
         return;
     }
@@ -688,57 +692,58 @@ function toggleDetails(index) {
     icon.innerText = "⏳";
 
     try {
-        console.log("🚚 Let's drive into analysis", name);
+        console.log("🚚 Starting Full Strategic Research for:", name);
 
-        // 1. Пошук даних через Jina
-        const searchQuery = `detailed business model, revenue tier, ecosystem role, and software strategy (build vs buy) for company ${name} ${url}`;
+        // 1. Глибокий пошук через Jina AI
+        const searchQuery = `detailed business model, revenue scale, ecosystem role, software strategy (build vs buy), and major partners for company ${name} ${url}`;
         const responseJina = await fetch(`https://s.jina.ai/${encodeURIComponent(searchQuery)}`, {
-            headers: { 'Authorization': `Bearer ${jinaToken}`, 'Accept': 'application/json' }
+            headers: { 
+                'Authorization': `Bearer ${jinaToken}`, 
+                'Accept': 'application/json' 
+            }
         });
         
-        if (!responseJina.ok) throw new Error("Error Jina Search");
+        if (!responseJina.ok) throw new Error("Jina Search Failed");
         const jinaData = await responseJina.json();
-        const researchText = jinaData.data.map(item => item.content).join('\n').substring(0, 15000);
+        const freshResearch = jinaData.data.map(item => item.content).join('\n').substring(0, 15000);
 
-        // 2. Аналіз через Groq
+        // 2. Повний стратегічний промпт (без скорочень)
         const promptText = `
-    Analyze the company "${name}" based ONLY on this research: ${researchText}
+            Analyze the company "${name}" based on provided research and existing internal knowledge.
 
-STRICT INSTRUCTIONS:
-1. FACTUAL ONLY: You must use only facts and exact statements found INSIDE the provided research. You are absolutely NOT allowed to supplement with general world knowledge or guesses.
-2. NO HALLUCINATIONS: If a parameter/field cannot be confidently extracted from the research, you MUST return the value "UNKNOWN" for that field. You can use public information if it related to analysed company
-3. NO SYNONYMS: Only copy words or exactly rephrase what is present in the research, but do NOT infer or paraphrase beyond what is written.
-4. NO INDUSTRY ASSUMPTIONS: Never assign a market, industry, or role unless this is clearly mentioned in the research.
-5. For the "summary" and "description" fields, if the research does not cover all required points, use only what is factual and write "UNKNOWN" for all missing points.
+            SOURCES:
+            1. INTERNAL KNOWLEDGE (Priority): ${existingKnowledge}
+            2. FRESH RESEARCH DATA: ${freshResearch}
 
-Return ONLY a JSON object using ALL fields below. Even "UNKNOWN" must be present where data is missing:
+            STRICT RULES:
+            1. HIERARCHY OF TRUTH: Use Internal Knowledge as the absolute primary source. Fresh Research should only supplement missing facts. DO NOT contradict the industry or core focus found in Internal Knowledge.
+            2. FINANCIAL SCALE (Strictly apply):
+               - LOW Share: <$1B | MID: $1B - $10B | HIGH: >$10B.
+            3. NO HALLUCINATIONS: If data is missing in both sources, return "UNKNOWN" for that specific field.
 
-{
-    "type": "Manufactures HW" | "SaaS/Platform" | "Hybrid Model" | "UNKNOWN",
-    "role": "OEM" | "SaaS/Platform" | "Tech Partner" | "Consumer" | "UNKNOWN",
-    "region": "EMEA" | "AMER" | "APAC" | "GLOBAL" | "UNKNOWN",
-    "share": "Low" | "Mid" | "High" | "UNKNOWN",
-    "maturity": "Low" | "Med" | "High" | "UNKNOWN",
-    "own_sw": "Yes" | "No" | "UNKNOWN",
-    "buy_sw": "Yes" | "No" | "UNKNOWN",
-    "revenue": "Low" | "Mid" | "High" | "UNKNOWN",
-    "growth": "Rapid" | "Stable" | "Declining" | "UNKNOWN",
-    "core": "string" | "UNKNOWN",
-    "hook": "string" | "UNKNOWN",
-    "expertise": "string" | "UNKNOWN",
-    "summary": "string" | "UNKNOWN",
-    "description": "string" | "UNKNOWN"
-}
+            TASK: Create a strategic profile.
+            For the "summary" field, write a professional executive summary (max 1 abstract).
+            YOU MUST COVER THESE 6 POINTS in the summary:
+            1. Business Model | 2. Revenue Scale | 3. Geographic Focus | 4. Ecosystem Role | 5. Software Strategy | 6. KEY RELATIONSHIPS.
 
-EXAMPLES:
-If the research says "company size is large and they operate in logistics, but no numbers or regions are given", then:
-- "share": "UNKNOWN"
-- "region": "UNKNOWN"
-- all other missing fields: "UNKNOWN"
-
-DO NOT return fields not present in this list. DO NOT insert any explanation, comments, or additional text.
-    }
-`;
+            Return ONLY a JSON object:
+            {
+                "type": "Manufactures HW" | "SaaS/Platform" | "Hybrid Model" | "UNKNOWN",
+                "role": "OEM" | "SaaS/Platform" | "Tech Partner" | "Consumer" | "UNKNOWN",
+                "region": "EMEA" | "AMER" | "APAC" | "GLOBAL" | "UNKNOWN",
+                "share": "Low" | "Mid" | "High" | "UNKNOWN",
+                "maturity": "Low" | "Med" | "High" | "UNKNOWN",
+                "own_sw": "Yes" | "No" | "UNKNOWN",
+                "buy_sw": "Yes" | "No" | "UNKNOWN",
+                "revenue": "Low" | "Mid" | "High" | "UNKNOWN",
+                "growth": "Rapid" | "Stable" | "Declining" | "UNKNOWN",
+                "core": "Primary focus areas",
+                "hook": "Strategic entry point",
+                "expertise": "Keyword1, Keyword2, Keyword3",
+                "summary": "The integrated 6-point narrative summary here",
+                "description": "Tactical analysis anchored to research data."
+            }
+        `;
 
         const responseGroq = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
@@ -749,25 +754,22 @@ DO NOT return fields not present in this list. DO NOT insert any explanation, co
             body: JSON.stringify({
                 model: "llama-3.3-70b-versatile",
                 messages: [
-                    { role: "system", content: "You are a Senior Strategic Analyst with deap knowledge in logistic and telematics. Return ONLY valid JSON." },
+                    { role: "system", content: "You are a Senior Strategic Analyst with deep knowledge in logistics. Return ONLY valid JSON." },
                     { role: "user", content: promptText }
                 ],
                 response_format: { "type": "json_object" }
             })
         });
 
-        if (!responseGroq.ok) {
-            const errData = await responseGroq.json();
-            throw new Error(errData.error?.message || "Groq API Error");
-        }
+        if (!responseGroq.ok) throw new Error("Groq API Error");
 
         const result = await responseGroq.json();
         const ai = JSON.parse(result.choices[0].message.content);
 
-        // 3. Надійне заповнення форми
+        // 3. Мапінг результатів у поля форми (використовуємо твої ID)
         const safeSet = (id, val) => {
             const el = document.getElementById(id);
-            if (el) el.value = val || '';
+            if (el) el.value = (val === "UNKNOWN") ? '' : (val || '');
         };
 
         safeSet('formType', ai.type);
@@ -786,16 +788,17 @@ DO NOT return fields not present in this list. DO NOT insert any explanation, co
         safeSet('formAiSummary', ai.summary);
 
         icon.innerText = "✅";
-    } catch (error) { 
-        console.error("Deep Search Error:", error);
-        alert(`Analysis Error: ${error.message}`); 
-        icon.innerText = "❌"; 
-    } finally { 
-        btn.disabled = false; 
-        setTimeout(() => { icon.innerText = "🚚"; }, 3000); 
+        console.log("Strategic research completed successfully.");
+
+    } catch (error) {
+        console.error("Deep Research Error:", error);
+        alert(`Analysis Error: ${error.message}`);
+        icon.innerText = "❌";
+    } finally {
+        btn.disabled = false;
+        setTimeout(() => { icon.innerText = "🚚"; }, 3000);
     }
 }
-
     function toggleSettings() {
         const panel = document.getElementById('settingsPanel');
         if (panel.classList.contains('hidden')) {
