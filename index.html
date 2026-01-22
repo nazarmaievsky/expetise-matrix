@@ -421,7 +421,7 @@ function setViewMode(mode) {
     render();
 }
 		
-    // 1. Ініціалізація Supabase
+    // 1. Initialisation Supabase, our Data Base
     const SB_URL = 'https://eurhcxjqapmgpiaqdciu.supabase.co'; 
     const SB_KEY = 'sb_publishable_lRTxziDxvYvLzEjaiTvHqA_5Ox0rOht';
     const sb = window.supabase.createClient(SB_URL, SB_KEY);   
@@ -430,7 +430,7 @@ function setViewMode(mode) {
     let currentLookalike = "none";
 
     async function loadDatabase() {
-        console.log("📡 Синхронізація з Supabase...");
+        console.log("📡 Sync with Supabase...");
         const { data, error } = await sb.from('companies').select('*').order('n', { ascending: true });
         if (!error && data) {
             companies = data;
@@ -675,7 +675,7 @@ function toggleDetails(index) {
     const btn = document.getElementById('deepCheckBtn');
     const icon = document.getElementById('deepIcon');
 
-    // Отримуємо існуючий контекст із бази для заземлення (Hierarchy of Truth)
+    // Get awailable context for AI analysis (Hierarchy of Truth)
     const idx = parseInt(document.getElementById('editIndex').value);
     const existingKnowledge = idx !== -1 ? (companies[idx].ai_strategic_summary || companies[idx].d || "") : "";
 
@@ -694,7 +694,7 @@ function toggleDetails(index) {
     try {
         console.log("🚚 Starting Full Strategic Research for:", name);
 
-        // 1. Глибокий пошук через Jina AI
+        // 1. Deep research with Jina AI crawler (Please tune or change for other crawler which can make more friendly markdown and crawl few pages not 1) OR extend settings for different LLM API keys
         const searchQuery = `detailed business model, revenue scale, ecosystem role, software strategy (build vs buy), and major partners for company ${name} ${url}`;
         const responseJina = await fetch(`https://s.jina.ai/${encodeURIComponent(searchQuery)}`, {
             headers: { 
@@ -702,12 +702,12 @@ function toggleDetails(index) {
                 'Accept': 'application/json' 
             }
         });
-        
+
         if (!responseJina.ok) throw new Error("Jina Search Failed");
         const jinaData = await responseJina.json();
         const freshResearch = jinaData.data.map(item => item.content).join('\n').substring(0, 15000);
 
-        // 2. Повний стратегічний промпт (без скорочень)
+        // 2. Prompt section for research
         const promptText = `
             Analyze the company "${name}" based on provided research and existing internal knowledge.
 
@@ -745,6 +745,21 @@ function toggleDetails(index) {
             }
         `;
 
+			// Replace Jina fetch with Firecrawl EXAMPLE
+			//const responseFire = await fetch('https://api.firecrawl.dev/v1/scrape', {
+    		//method: 'POST',
+    		//headers: {
+        	//'Content-Type': 'application/json',
+        	//'Authorization': `Bearer ${firecrawlToken}`
+    		//},
+    		//body: JSON.stringify({
+        	//url: url,
+        	//formats: ['markdown']
+   			// })
+			//});
+			//const fireData = await responseFire.json();
+			//const researchText = fireData.data.markdown; // Clean text for Groq
+
         const responseGroq = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
             headers: { 
@@ -766,7 +781,7 @@ function toggleDetails(index) {
         const result = await responseGroq.json();
         const ai = JSON.parse(result.choices[0].message.content);
 
-        // 3. Мапінг результатів у поля форми (використовуємо твої ID)
+        // 3. Results mapping using ID's
         const safeSet = (id, val) => {
             const el = document.getElementById(id);
             if (el) el.value = (val === "UNKNOWN") ? '' : (val || '');
@@ -815,7 +830,7 @@ function toggleDetails(index) {
     }
 
     function clearKeys() { if (confirm("Clear keys?")) { localStorage.clear(); location.reload(); } }
-
+	// CSV file exporter
     function exportToExcel() {
         const headers = ["Name", "URL", "Region", "Role", "Model", "Share", "Maturity", "Own", "Buy", "Focus", "Hook", "Exp", "Desc"];
         const rows = companies.map(co => [ `"${co.n}"`, `"${co.u}"`, `"${co.r}"`, `"${co.er}"`, `"${co.t}"`, `"${co.ms}"`, `"${co.m}"`, `"${co.o}"`, `"${co.b}"`, `"${co.c}"`, `"${co.ep}"`, `"${(co.exp || []).join(', ')}"`, `"${co.d}"` ]);
@@ -826,7 +841,7 @@ function toggleDetails(index) {
         link.download = "Expertise_Matrix_" + new Date().toISOString().slice(0,10) + ".csv";
         link.click();
     }
-
+	// Analysis for Summary and Relationship section
 	async function runAdvancedAnalysis(index) {
     const co = companies[index];
     const display = document.getElementById(`summary-display-${index}`);
@@ -837,7 +852,7 @@ function toggleDetails(index) {
 
     const researchText = co.ai_strategic_summary || co.d || "";
 
-    // ВІДНОВЛЕНО: Повний промпт з усіма вимогами
+    // FUll Prompt, only Groq used whithout crawler
     const promptText = `
         Analyze the company "${co.n}" based ONLY on this provided research: ${researchText}.
 
@@ -887,8 +902,6 @@ function toggleDetails(index) {
 
         const result = await resp.json();
         const ai = JSON.parse(result.choices[0].message.content);
-
-        // ВІДНОВЛЕНО: Оригінальні назви полів (sb, revenue_tier, growth_rate)
         const { error } = await sb.from('companies').update({
             ai_strategic_summary: ai.summary,
             t: ai.type,
@@ -907,7 +920,7 @@ function toggleDetails(index) {
 
         if (error) throw error;
 
-        // Оновлюємо локально
+        // Local refresh
         companies[index] = { 
             ...co, 
             ...ai, 
