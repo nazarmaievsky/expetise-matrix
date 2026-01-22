@@ -582,6 +582,9 @@ function render() {
         thead.classList.remove('hidden');
         table.style.display = 'table';
         body.className = "divide-y divide-slate-100";
+		<div id="details-${co.originalIdx}" class="details-box mt-2 hidden">
+    		${co.ai_strategic_summary || co.d || 'No strategic summary available.'}
+		</div>
     }
 
     data.forEach((co) => {
@@ -671,32 +674,40 @@ function render() {
 
 // Summary, Description, Reletionship button for company
 function toggleDetails(index) {
-    const company = companies[index];
-    const detailsRow = document.getElementById(`details-${index}`);
-
-    if (!detailsRow.classList.contains('hidden')) {
-        detailsRow.classList.add('hidden');
+    const detailsBox = document.getElementById(`details-${index}`);
+    
+    if (!detailsBox) {
+        console.error(`Елемент details-${index} не знайдено`);
         return;
     }
 
-    const summaryContent = company.ai_strategic_summary || company.d || "No research data available.";
+    // Перемикаємо видимість (Tailwind клас 'hidden')
+    const isHidden = detailsBox.classList.contains('hidden');
+    
+    if (isHidden) {
+        // Отримуємо актуальні дані з масиву
+        const company = companies[index];
+        const summaryContent = company.ai_strategic_summary || company.d || "No research data available.";
 
-    detailsRow.innerHTML = `
-        <div class="p-6 bg-blue-50/50 rounded-2xl border border-blue-100 mt-2">
-            <div class="mb-4">
-                <h4 class="text-[10px] font-black uppercase text-blue-900 mb-2 italic">Summary & Relationships</h4>
-                <p id="summary-display-${index}" class="text-[11px] leading-relaxed text-slate-700 font-medium">
+        // Оновлюємо вміст DIV (без вставки <td>)
+        detailsBox.innerHTML = `
+            <div class="p-4 bg-blue-50/50 rounded-xl border border-blue-100 mt-2 space-y-3">
+                <h4 class="text-[9px] font-black uppercase text-blue-900 italic">Strategic Summary</h4>
+                <p id="summary-display-${index}" class="text-[10px] leading-relaxed text-slate-700 font-medium">
                     ${summaryContent}
                 </p>
+                <div class="pt-2">
+                    <button onclick="runAdvancedAnalysis(${index})" 
+                            class="bg-blue-600 hover:bg-blue-700 text-white font-black py-1.5 px-3 rounded-lg text-[8px] uppercase tracking-widest shadow-sm transition-all">
+                        🪄 Sync & Refine
+                    </button>
+                </div>
             </div>
-            <div class="flex gap-3 no-print">
-                <button onclick="runAdvancedAnalysis(${index})" class="bg-blue-600 hover:bg-blue-700 text-white font-black py-2 px-4 rounded-xl text-[9px] uppercase tracking-widest shadow-md transition-all">
-                    🪄 Sync & Refine with AI
-                </button>
-            </div>
-        </div>
-    `;
-    detailsRow.classList.remove('hidden');
+        `;
+        detailsBox.classList.remove('hidden');
+    } else {
+        detailsBox.classList.add('hidden');
+    }
 }
 
     async function deepCheckCompanyAI() {
