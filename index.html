@@ -613,8 +613,8 @@ function render() {
             `;
             body.appendChild(card);
         } else {
-            // ВІДНОВЛЕНО: Стандартний режим (Рядки таблиці)
-            // Повертаємо оригінальний HTML-код комірок, який був до моїх невдалих правок
+           
+            // Look alike row
             const row = document.createElement('tr');
             row.className = `group hover:bg-slate-50 transition-all ${co.ssm >= 70 ? 'row-lookalike' : ''}`;
             row.innerHTML = `
@@ -669,11 +669,34 @@ function render() {
     document.getElementById('counter').innerText = viewMode === 'diamond' ? `Diamonds: ${count}` : `Total Leads: ${count}`;
 }
 
-    function toggleDetails(idx) {
-    const el = document.getElementById(`details-${idx}`);
-    if (el) {
-        el.classList.toggle('hidden');
+// Summary, Description, Reletionship button for company
+function toggleDetails(index) {
+    const company = companies[index];
+    const detailsRow = document.getElementById(`details-${index}`);
+
+    if (!detailsRow.classList.contains('hidden')) {
+        detailsRow.classList.add('hidden');
+        return;
     }
+
+    const summaryContent = company.ai_strategic_summary || company.d || "No research data available.";
+
+    detailsRow.innerHTML = `
+        <div class="p-6 bg-blue-50/50 rounded-2xl border border-blue-100 mt-2">
+            <div class="mb-4">
+                <h4 class="text-[10px] font-black uppercase text-blue-900 mb-2 italic">Summary & Relationships</h4>
+                <p id="summary-display-${index}" class="text-[11px] leading-relaxed text-slate-700 font-medium">
+                    ${summaryContent}
+                </p>
+            </div>
+            <div class="flex gap-3 no-print">
+                <button onclick="runAdvancedAnalysis(${index})" class="bg-blue-600 hover:bg-blue-700 text-white font-black py-2 px-4 rounded-xl text-[9px] uppercase tracking-widest shadow-md transition-all">
+                    🪄 Sync & Refine with AI
+                </button>
+            </div>
+        </div>
+    `;
+    detailsRow.classList.remove('hidden');
 }
 
     async function deepCheckCompanyAI() {
@@ -830,6 +853,108 @@ DO NOT return fields not present in this list. DO NOT insert any explanation, co
         link.download = "Expertise_Matrix_" + new Date().toISOString().slice(0,10) + ".csv";
         link.click();
     }
+
+		async function runAdvancedAnalysis(index) {
+    const company = companies[index];
+    const displayElement = document.getElementById(`summary-display-${index}`);
+    
+    // 1. Пріоритет: беремо твій ручний аналіз або попередній опис
+    const researchText = company.ai_strategic_summary || company.d || "";
+    const name = company.n;
+
+    const groqKey = localStorage.getItem('groq_api_key');
+    if (!groqKey) {
+        alert("Please, add Groq API key in settings (⚙️).");
+        return;
+    }
+
+    if (displayElement) displayElement.innerText = "Refining strategy based on your data... ⏳";
+
+    // Promt with grounding
+    const promptText = `
+        Analyze the company "${name}" based ONLY on this provided research: ${researchText}.
+
+        STRICT RULES:
+        1. HIERARCHY OF TRUTH: Use the provided research as the primary source. Do not hallucinate other industries.
+        2. FINANCIAL SCALE (Strictly apply):
+           - LOW Share: <$1B | MID: $1B - $10B | HIGH: >$10B.
+        3. NO HALLUCINATIONS: If the research is brief, structure only what is available. If you can check information about company in internet - check it.
+
+        TASK: Create a strategic profile.
+        For the "summary" field, write a professional executive summary but not more than 1 abstract.
+        YOU MUST COVER THESE 6 POINTS in the summary:
+        1. Business Model (e.x Manufacturer HW, SaaS, Platform, Hybrid) | 2. Revenue Scale | 3. Geographic Focus (EMEA, APAC, etc.) | 4. Ecosystem Role | 5. Software Strategy Buy or Own SW | 6. KEY RELATIONSHIPS.
+
+        Return ONLY a JSON object:
+        {
+            "type": "Manufactures HW" | "SaaS/Platform" | "Hybrid Model",
+            "role": "OEM" | "SaaS/Platform" | "Tech Partner" | "Consumer",
+            "region": "EMEA" | "AMER" | "APAC" | "GLOBAL",
+            "share": "Low" | "Mid" | "High",
+            "maturity": "Low" | "Med" | "High",
+            "own_sw": "Yes" | "No",
+            "buy_sw": "Yes" | "No",
+            "revenue": "Low" | "Mid" | "High",
+            "growth": "Rapid" | "Stable" | "Declining",
+            "core": "Primary focus areas",
+            "hook": "Strategic entry point",
+            "expertise": "Keyword1, Keyword2, Keyword3",
+            "summary": "The integrated 6-point narrative summary here",
+            "description": "Tactical analysis anchored to research data."
+        }
+    `;
+
+    try {
+        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${groqKey}` },
+            body: JSON.stringify({
+                model: "llama-3.3-70b-versatile",
+                messages: [
+                    { role: "system", content: "You are a Senior Strategic Analyst. Return ONLY valid JSON." },
+                    { role: "user", content: promptText }
+                ],
+                response_format: { "type": "json_object" }
+            })
+        });
+
+        const result = await response.json();
+        const ai = JSON.parse(result.choices[0].message.content);
+
+        // Оновлення Supabase
+        const { error } = await sb.from('companies').update({
+            ai_strategic_summary: ai.summary,
+            t: ai.type,
+            er: ai.role,
+            r: ai.region,
+            ms: ai.share,
+            m: ai.maturity,
+            o: ai.own_sw,
+            b: ai.buy_sw,
+            revenue_tier: ai.revenue,
+            growth_rate: ai.growth,
+            c: ai.core,
+            ep: ai.hook,
+            d: ai.description // оновлюємо і технічний опис
+        }).eq('id', company.id);
+
+        if (error) throw error;
+
+        // Оновлюємо локально
+        companies[index] = { ...companies[index], ...ai, ai_strategic_summary: ai.summary, revenue_tier: ai.revenue, growth_rate: ai.growth };
+        
+        if (displayElement) {
+            displayElement.innerText = ai.summary;
+            displayElement.classList.add('text-indigo-700', 'font-bold');
+        }
+        alert("Analysis Synced! 🚀");
+
+    } catch (err) {
+        console.error("Analysis Error:", err);
+        if (displayElement) displayElement.innerText = researchText;
+        alert("Failed to sync. Check console.");
+    }
+}
 
     init();
 </script>
