@@ -552,7 +552,6 @@ function render() {
     const table = body.closest('table');
     const thead = table.querySelector('thead');
     
-    // Фільтрація (залишаємо без змін)
     const fReg = document.getElementById('regFilter').value;
     const fMat = document.getElementById('matFilter').value;
     const fRole = document.getElementById('roleFilter').value;
@@ -573,7 +572,6 @@ function render() {
     body.innerHTML = '';
     let count = 0;
 
-    // Налаштування режимів (Стандартний vs Діамантовий)
     if (viewMode === 'diamond') {
         thead.classList.add('hidden');
         table.style.display = 'block';
@@ -582,20 +580,15 @@ function render() {
         thead.classList.remove('hidden');
         table.style.display = 'table';
         body.className = "divide-y divide-slate-100";
-		
     }
 
     data.forEach((co) => {
         if (!co.visible) return;
-
-        // Логіка Hidden Diamond (v31.2 - більш збалансована)
         const isDiamond = (co.growth_rate === 'Rapid' && co.o === 'Yes') || (co.ssm >= 80);
         if (viewMode === 'diamond' && !isDiamond) return;
-
         count++;
         
         if (viewMode === 'diamond') {
-            // Режим Діамантів (Картки)
             const card = document.createElement('div');
             card.className = "p-8 bg-white rounded-[3rem] shadow-xl border border-slate-100 flex flex-col gap-4 relative group hover:scale-[1.02] transition-all";
             card.innerHTML = `
@@ -603,39 +596,29 @@ function render() {
                     <a href="${co.u}" target="_blank" class="hover:opacity-70"><h3 class="text-xl font-black uppercase tracking-tighter text-blue-900 italic">${co.n}</h3></a>
                     <span class="text-2xl">💎</span>
                 </div>
-                <div class="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">${co.r} • ${co.er}</div>
                 <div class="text-xs text-slate-600 leading-relaxed font-medium bg-slate-50 p-5 rounded-2xl italic border border-slate-100">
-                    ${(co.ai_strategic_summary || '').replace(/(EMEA|OEM|Own SW: Yes)/g, '<span class="text-indigo-700 font-bold">$1</span>')}
+                    ${(co.ai_strategic_summary || co.d || '').substring(0, 200)}...
                 </div>
                 <div class="mt-auto flex justify-between items-center pt-4">
                     <span class="text-[9px] font-black px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full uppercase italic">Growth: ${co.growth_rate}</span>
                     <button onclick="openModalForEdit(${co.originalIdx})" class="text-[9px] font-black text-slate-400 hover:text-black uppercase underline italic">Strategy →</button>
-                </div>
-            `;
+                </div>`;
             body.appendChild(card);
         } else {
-           
-            // Look alike row
             const row = document.createElement('tr');
             row.className = `group hover:bg-slate-50 transition-all ${co.ssm >= 70 ? 'row-lookalike' : ''}`;
             row.innerHTML = `
-               <td class="p-6">
-    <a href="${co.u}" target="_blank" class="text-base font-black uppercase tracking-tighter text-slate-800 hover:text-blue-600 transition-all italic underline decoration-slate-200 decoration-2 underline-offset-4">${co.n}</a>
-    
-    <div class="flex flex-col gap-1 mt-1">
-        <div class="flex items-center gap-2">
-            <span class="text-[9px] font-black px-2 py-0.5 bg-slate-100 text-slate-500 rounded uppercase border border-slate-200">${co.er || 'SaaS'}</span>
-            <span class="text-[9px] text-slate-400 font-bold uppercase tracking-widest">${co.r}</span>
-        </div>
-    </div>
-
-    <button onclick="toggleDetails(${co.originalIdx})" class="mt-2 text-[9px] text-blue-500 font-black uppercase hover:underline no-print block">
-        Summary & Relationships
-    </button>
-    <div id="details-${co.originalIdx}" class="details-box mt-2 text-[10px] text-slate-600 leading-relaxed font-medium hidden">
-        ${co.ai_strategic_summary || co.d || 'No strategic summary available.'}
-    </div>
-</td>
+                <td class="p-6">
+                    <a href="${co.u}" target="_blank" class="text-base font-black uppercase tracking-tighter text-slate-800 hover:text-blue-600 transition-all italic underline decoration-slate-200 decoration-2 underline-offset-4">${co.n}</a>
+                    <div class="flex items-center gap-2 mt-1">
+                        <span class="text-[9px] font-black px-2 py-0.5 bg-slate-100 text-slate-500 rounded uppercase border border-slate-200">${co.er || 'SaaS'}</span>
+                        <span class="text-[9px] text-slate-400 font-bold uppercase tracking-widest">${co.r}</span>
+                    </div>
+                    <button onclick="toggleDetails(${co.originalIdx})" class="mt-2 text-[9px] text-blue-500 font-black uppercase hover:underline no-print block">
+                        Summary & Relationships
+                    </button>
+                    <div id="details-${co.originalIdx}" class="hidden mt-3 p-4 bg-blue-50/50 rounded-2xl border border-blue-100 shadow-sm"></div>
+                </td>
                 <td class="p-4 text-center">
                     <div class="flex justify-center">
                         <div class="score-circle ${co.ssm >= 70 ? 'score-high' : co.ssm >= 20 ? 'score-med' : 'score-low'}">${co.ssm === -1 ? 'BASE' : co.ssm + '%'}</div>
@@ -646,69 +629,46 @@ function render() {
                     <div class="text-[10px] font-black ${co.o === 'Yes' ? 'text-blue-600' : 'text-slate-300'}">OWN: ${co.o === 'Yes' ? '✓' : '×'}</div>
                     <div class="text-[10px] font-black ${co.b === 'Yes' ? 'text-emerald-600' : 'text-slate-300'}">BUY: ${co.b === 'Yes' ? '✓' : '×'}</div>
                 </td>
-                <td class="p-4">
-                    <div class="flex flex-col gap-1 text-center">
-                        <span class="text-[9px] font-black text-slate-400 uppercase italic">Mat: ${co.m}</span>
-                    </div>
-                </td>
-                <td class="p-6">
-                    <div class="text-xs font-bold text-blue-900 uppercase italic leading-tight">${co.c || ''}</div>
-                </td>
-                <td class="p-6 text-[10px] font-medium italic text-slate-500 leading-tight">
-                    ${co.ep || ''}
-                </td>
+                <td class="p-4 text-center"><span class="text-[9px] font-black text-slate-400 uppercase italic">Mat: ${co.m}</span></td>
+                <td class="p-6"><div class="text-xs font-bold text-blue-900 uppercase italic leading-tight">${co.c || ''}</div></td>
+                <td class="p-6 text-[10px] font-medium italic text-slate-500 leading-tight">${co.ep || ''}</td>
                 <td class="p-6 text-center no-print">
                     <button onclick="openModalForEdit(${co.originalIdx})" class="p-3 bg-white border border-slate-200 rounded-2xl shadow-sm hover:bg-slate-900 hover:text-white transition-all">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                     </button>
-                </td>
-            `;
+                </td>`;
             body.appendChild(row);
         }
     });
-    
     document.getElementById('counter').innerText = viewMode === 'diamond' ? `Diamonds: ${count}` : `Total Leads: ${count}`;
 }
 
 // Summary, Description, Reletionship button for company
 function toggleDetails(index) {
     const detailsBox = document.getElementById(`details-${index}`);
-    
-    if (!detailsBox) {
-        console.error(`Елемент details-${index} не знайдено`);
-        return;
-    }
+    if (!detailsBox) return;
 
-    // Перемикаємо видимість (Tailwind клас 'hidden')
-    const isHidden = detailsBox.classList.contains('hidden');
-    
-    if (isHidden) {
-        // Отримуємо актуальні дані з масиву
-        const company = companies[index];
-        const summaryContent = company.ai_strategic_summary || company.d || "No research data available.";
-
-        // Оновлюємо вміст DIV (без вставки <td>)
+    if (detailsBox.classList.contains('hidden')) {
+        const co = companies[index];
+        const summaryText = co.ai_strategic_summary || co.d || "No research data available.";
+        
         detailsBox.innerHTML = `
-            <div class="p-4 bg-blue-50/50 rounded-xl border border-blue-100 mt-2 space-y-3">
-                <h4 class="text-[9px] font-black uppercase text-blue-900 italic">Strategic Summary</h4>
-                <p id="summary-display-${index}" class="text-[10px] leading-relaxed text-slate-700 font-medium">
-                    ${summaryContent}
+            <div class="p-4 bg-blue-50/50 rounded-xl border border-blue-100 mt-2">
+                <h4 class="text-[9px] font-black uppercase text-blue-900 mb-2 italic">Strategic Summary</h4>
+                <p id="summary-display-${index}" class="text-[10px] leading-relaxed text-slate-700 font-medium mb-3">
+                    ${summaryText}
                 </p>
-                <div class="pt-2">
-                    <button onclick="runAdvancedAnalysis(${index})" 
-                            class="bg-blue-600 hover:bg-blue-700 text-white font-black py-1.5 px-3 rounded-lg text-[8px] uppercase tracking-widest shadow-sm transition-all">
-                        🪄 Sync & Refine
-                    </button>
-                </div>
+                <button onclick="runAdvancedAnalysis(${index})" 
+                        class="bg-blue-600 hover:bg-blue-700 text-white font-black py-1.5 px-3 rounded-lg text-[8px] uppercase tracking-widest transition-all">
+                    🪄 Sync & Refine
+                </button>
             </div>
-			
         `;
         detailsBox.classList.remove('hidden');
     } else {
         detailsBox.classList.add('hidden');
     }
 }
-
     async function deepCheckCompanyAI() {
     const name = document.getElementById('formName').value;
     const url = document.getElementById('formUrl').value;
@@ -864,31 +824,25 @@ DO NOT return fields not present in this list. DO NOT insert any explanation, co
         link.click();
     }
 
-		async function runAdvancedAnalysis(index) {
-    const company = companies[index];
-    const displayElement = document.getElementById(`summary-display-${index}`);
-    
-    // 1. Пріоритет: беремо твій ручний аналіз або попередній опис
-    const researchText = company.ai_strategic_summary || company.d || "";
-    const name = company.n;
-
+	async function runAdvancedAnalysis(index) {
+    const co = companies[index];
+    const display = document.getElementById(`summary-display-${index}`);
     const groqKey = localStorage.getItem('groq_api_key');
-    if (!groqKey) {
-        alert("Please, add Groq API key in settings (⚙️).");
-        return;
-    }
+    
+    if (!groqKey) { alert("Please, add Groq API key in settings (⚙️)."); return; }
+    if (display) display.innerText = "Refining strategy based on your data... ⏳";
 
-    if (displayElement) displayElement.innerText = "Refining strategy based on your data... ⏳";
+    const researchText = co.ai_strategic_summary || co.d || "";
 
-    // Promt with grounding
+    // ВІДНОВЛЕНО: Повний промпт з усіма вимогами
     const promptText = `
-        Analyze the company "${name}" based ONLY on this provided research: ${researchText}.
+        Analyze the company "${co.n}" based ONLY on this provided research: ${researchText}.
 
         STRICT RULES:
-        1. HIERARCHY OF TRUTH: Use the provided research as the primary source. Do not hallucinate other industries.
+        1. HIERARCHY OF TRUTH: Use the provided research as the absolute primary source. Do not hallucinate other industries.
         2. FINANCIAL SCALE (Strictly apply):
            - LOW Share: <$1B | MID: $1B - $10B | HIGH: >$10B.
-        3. NO HALLUCINATIONS: If the research is brief, structure only what is available. If you can check information about company in internet - check it.
+        3. NO HALLUCINATIONS: If the research is brief, structure only what is available.
 
         TASK: Create a strategic profile.
         For the "summary" field, write a professional executive summary but not more than 1 abstract.
@@ -915,7 +869,7 @@ DO NOT return fields not present in this list. DO NOT insert any explanation, co
     `;
 
     try {
-        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${groqKey}` },
             body: JSON.stringify({
@@ -928,10 +882,10 @@ DO NOT return fields not present in this list. DO NOT insert any explanation, co
             })
         });
 
-        const result = await response.json();
+        const result = await resp.json();
         const ai = JSON.parse(result.choices[0].message.content);
 
-        // Оновлення Supabase
+        // ВІДНОВЛЕНО: Оригінальні назви полів (sb, revenue_tier, growth_rate)
         const { error } = await sb.from('companies').update({
             ai_strategic_summary: ai.summary,
             t: ai.type,
@@ -945,23 +899,27 @@ DO NOT return fields not present in this list. DO NOT insert any explanation, co
             growth_rate: ai.growth,
             c: ai.core,
             ep: ai.hook,
-            d: ai.description // оновлюємо і технічний опис
-        }).eq('id', company.id);
+            d: ai.description
+        }).eq('id', co.id);
 
         if (error) throw error;
 
         // Оновлюємо локально
-        companies[index] = { ...companies[index], ...ai, ai_strategic_summary: ai.summary, revenue_tier: ai.revenue, growth_rate: ai.growth };
+        companies[index] = { 
+            ...co, 
+            ...ai, 
+            ai_strategic_summary: ai.summary, 
+            revenue_tier: ai.revenue, 
+            growth_rate: ai.growth 
+        };
         
-        if (displayElement) {
-            displayElement.innerText = ai.summary;
-            displayElement.classList.add('text-indigo-700', 'font-bold');
+        if (display) {
+            display.innerText = ai.summary;
+            display.classList.add('text-indigo-700', 'font-bold');
         }
-        alert("Analysis Synced! 🚀");
-
     } catch (err) {
         console.error("Analysis Error:", err);
-        if (displayElement) displayElement.innerText = researchText;
+        if (display) display.innerText = researchText;
         alert("Failed to sync. Check console.");
     }
 }
