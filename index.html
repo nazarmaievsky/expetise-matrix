@@ -582,9 +582,7 @@ function render() {
         thead.classList.remove('hidden');
         table.style.display = 'table';
         body.className = "divide-y divide-slate-100";
-		<div id="details-${co.originalIdx}" class="details-box mt-2 hidden">
-    		${co.ai_strategic_summary || co.d || 'No strategic summary available.'}
-		</div>
+		
     }
 
     data.forEach((co) => {
@@ -703,6 +701,7 @@ function toggleDetails(index) {
                     </button>
                 </div>
             </div>
+			
         `;
         detailsBox.classList.remove('hidden');
     } else {
