@@ -228,15 +228,15 @@
                 </div>
             </div>
 
-            <div class="p-5 bg-indigo-50/50 rounded-[2rem] border-2 border-indigo-100 grid grid-cols-2 gap-4">
-                <div class="space-y-1">
-                    <label class="text-[9px] font-black uppercase text-indigo-400 ml-2">Revenue Tier</label>
-                    <select id="formRevenue" class="w-full p-3 bg-white border rounded-xl text-xs font-black outline-none">
-                        <option value="Low">Low (< $10M)</option>
-                        <option value="Mid">Mid ($10M - $100M)</option>
-                        <option value="High">High (> $100M)</option>
-                    </select>
-                </div>
+<div class="p-5 bg-indigo-50/50 rounded-[2rem] border-2 border-indigo-100 grid grid-cols-2 gap-4">
+    <div class="space-y-1">
+        <label class="text-[9px] font-black uppercase text-indigo-400 ml-2">Revenue Tier</label>
+        <select id="formRevenue" class="w-full p-3 bg-white border rounded-xl text-xs font-black outline-none">
+            <option value="Low">Low (< $1B)</option>
+            <option value="Mid">Mid ($1B - $10B)</option>
+            <option value="High">High (> $10B)</option>
+        </select>
+    </div>
                 <div class="space-y-1">
                     <label class="text-[9px] font-black uppercase text-indigo-400 ml-2">Growth Rate</label>
                     <select id="formGrowth" class="w-full p-3 bg-white border rounded-xl text-xs font-black outline-none">
@@ -245,6 +245,10 @@
                         <option value="Declining">Declining</option>
                     </select>
                 </div>
+	<div class="space-y-1">
+        <label class="text-[9px] font-black uppercase text-indigo-400 ml-2">EBITDA Status</label>
+        <input type="text" id="formEbitda" class="w-full p-3 bg-white border rounded-xl text-xs font-black outline-none" placeholder="e.g. 22% or $1.1B">
+    </div>
                <div class="space-y-1 col-span-2">
     					<label class="text-[9px] font-black uppercase text-indigo-600 ml-2">AI Strategic Summary (Redundant Data)</label>
     					<textarea id="formAiSummary" rows="2" class="w-full p-4 bg-indigo-50/50 border border-indigo-100 rounded-2xl outline-none text-xs font-bold text-indigo-900" placeholder="AI Analysis will appear here"></textarea>
@@ -805,6 +809,7 @@ function toggleDetails(index) {
         safeSet('formExp', ai.expertise);
         safeSet('formDesc', ai.description);
         safeSet('formAiSummary', ai.summary);
+		safeSet('formEbitda', ai.ebitda);
 
         icon.innerText = "✅";
         console.log("Strategic research completed successfully.");
