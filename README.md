@@ -1,96 +1,71 @@
-# Expertise Matrix v30.2 — Strategic Intelligence Platform
+# 🚚 Expertise Matrix v30.2 — Strategic Intelligence Platform
 
-This project is a specialized Strategic Leads Analysis platform designed for the telematics, logistics, and IoT industries. It integrates **Supabase** for real-time data management, **Groq (Llama 3.3 70B)** for deep analytical processing, and **Jina AI** for automated web research.
-
----
-
-## 🧠 Core Intelligence Logic: "The Hierarchy of Truth"
-
-To prevent AI hallucinations and ensure data integrity, the system operates on a strict anchoring principle:
-
-1. **Primary Source (Internal Knowledge):** The AI treats existing notes in the `d` (Description) and `ai_strategic_summary` columns as the absolute truth. It is forbidden from contradicting this data during refinement.
-2. **Secondary Source (Fresh Research):** When using the **Deep Check (Truck icon)**, Jina AI fetches live web data. This information is used solely to supplement missing facts or update volatile metrics (e.g., recent partnerships or revenue tiers), while respecting the primary source's domain.
+**Expertise Matrix** is a high-performance Strategic CRM and Business Intelligence tool tailored for the logistics, telematics, and rail industries. It utilizes a **RAG (Retrieval-Augmented Generation)** architecture to transform raw web data into structured financial profiles and executive strategic summaries.
 
 ---
 
-## 📊 Strategic Analysis Framework
+## 🧠 Architectural Core: Tavily + Groq RAG
 
-Every company analyzed by the system must adhere to a standardized 12-field JSON profile and a cohesive 2-sentence summary.
+In version 30.2, the platform has fully migrated from Jina AI to **Tavily AI**. This shift allows for multi-source research, aggregating data from financial news, LinkedIn, industry reports, and official corporate sites simultaneously.
 
-### The 6-Point Summary Requirement
+1. **Tavily AI (Research Engine):** Acts as the "Field Researcher." It identifies facts regarding Revenue, EBITDA status, and business models across the live web.
+2. **Groq (Llama 3.3 70B):** The central "Reasoning Engine." It analyzes retrieved data, compares it against existing internal knowledge, and structures it into valid JSON profiles.
+3. **Supabase (Persistence):** A robust cloud database ensuring real-time synchronization of all strategic insights across the matrix.
 
-Each strategic summary must explicitly cover:
+---
 
-1. **Business Model:** (e.g., Hardware Manufacturer, SaaS, Hybrid)
-2. **Revenue Scale:** Based on defined financial tiers.
-3. **Geographic Focus:** (e.g., EMEA, AMER, APAC, GLOBAL)
-4. **Ecosystem Role:** (e.g., OEM, Tech Partner, Consumer)
-5. **Software Strategy:** (Buy vs. Own Software R&D)
-6. **Key Relationships:** Notable partners, parent companies, or major clients.
+## ⚡ Key Strategic Features
 
-### Financial Scaling (Market Share Index)
+### 🪄 Sync & Refine (Strategic Executive Summary)
 
-* **LOW:** < $1 Billion (Niche players or emerging startups).
-* **MID:** $1 Billion - $10 Billion (Established market leaders).
-* **HIGH:** > $10 Billion (Global enterprise giants).
+Generates a professional 6-point bulleted profile for any company:
+
+* **Business Model:** (Hybrid / SaaS / HW)
+* **Financials:** Exact Revenue figures and EBITDA margin status.
+* **Geography:** Primary markets and global headquarters.
+* **Ecosystem Role:** Position within the value chain (OEM, Platform, etc.).
+* **Software Strategy:** Internal R&D focus vs. "Buy & Integrate" logic.
+* **Ownership/Partners:** PE/VC backers, parent companies, and core strategic partners.
+
+### 🚚 Deep Research (Automated Profiling)
+
+Triggered by the "Truck" icon, this function automates the entire lead-entry process. By leveraging Tavily, the system now automatically detects and populates the **EBITDA Status** field, eliminating the need for manual financial digging.
+
+### 📊 Flexible Similarity Scoring (SSM)
+
+The "Look-alike" algorithm has been refined to understand "Hybrid" business models:
+
+* **Hybrid Models** now receive a partial match score (+20%) when compared with pure-play hardware (**HW**) or software (**SaaS**) companies. This ensures high-relevancy targets are not filtered out due to rigid classification.
+
+### 💎 Hidden Diamonds Mode
+
+A specialized UI filter designed to isolate high-value opportunities:
+
+* Identifies companies with **Rapid Growth** AND **Proprietary Software**.
+* Flags any company with a **Similarity Match (SSM) ≥ 80%**.
 
 ---
 
 ## 🛠 Technical Stack
 
-| Component | Technology | Role |
-| --- | --- | --- |
-| **Database** | Supabase (PostgreSQL) | Real-time synchronization and persistent storage. |
-| **LLM Engine** | Groq (Llama 3.3 70B) | Strategic reasoning, JSON structuring, and market analysis. |
-| **Web Reader** | Jina AI | Markdown-optimized web scraping and research retrieval. |
-| **Styling** | Tailwind CSS | Modern, responsive UI with "Diamond Mode" visualization. |
+| Layer | Technology |
+| --- | --- |
+| **Frontend** | Vanilla JS, Tailwind CSS (Glassmorphism & Diamond UI) |
+| **Database** | Supabase (PostgreSQL) |
+| **Intelligence** | Groq API (Llama-3.3-70b-versatile) |
+| **Research API** | Tavily Search AI (Advanced Search Depth) |
 
 ---
 
-## ⚡ Key Features
+## 📜 Hierarchy of Truth (Data Integrity)
 
-### 📋 SSM (Similarity Scoring Methodology)
-
-Calculates lead compatibility against a selected "Baseline" company:
-
-* **SW Strategy Match:** +40%
-* **Business Model Identity:** +30%
-* **Ecosystem Role:** +15%
-* **Market Share Alignment:** +10%
-* **Domain Overlap:** +5%
-
-### 💎 Hidden Diamonds Mode
-
-A specialized view filter that isolates high-value opportunities. A "Diamond" is defined by:
-
-* **Rapid Growth** + **Proprietary Software (Own SW: Yes)**
-* **OR** a **Similarity Score (SSM) >= 80%**.
-
-### 🪄 Sync & Refine
-
-A one-click tool (`runAdvancedAnalysis`) that cleanses raw research notes into a polished, strategic executive summary without losing the original context.
+Version 30.2 implements the **Cumulative Knowledge** principle:
+During every analysis, the AI treats the existing strategic summary as the "Absolute Truth" (Strategic Base). New web data is used only to supplement or update this base, ensuring that manually verified insights or high-quality previous reports are never overwritten by irrelevant web noise.
 
 ---
 
-## 🚀 Setup & Installation
-
-1. **Database Configuration:** Ensure your Supabase table `companies` includes the necessary columns (`ai_strategic_summary`, `revenue_tier`, `growth_rate`, etc.).
-2. **API Keys:** Open the Settings panel (⚙️) within the app to save your:
-* `Groq API Key` (for AI Analysis).
-* `Jina AI Token` (for Deep Web Research).
-
-
-3. **Deployment:** The `index.html` is a standalone file that can be hosted on GitHub Pages, Vercel, or any static hosting provider.
-
----
-
-## 🛡 Strategic Transparency
-
-**Expertise Matrix v30.2** is a product of **Human-AI Co-Creation**.
-
-* **Strategic Vision & Business Logic:** Defined by the Product Owner.
-* **Algorithm Calibration & Code Execution:** Implemented in partnership with **Gemini & Llama 3.3**.
-
----
-
-*Ref: LOG-MATRIX-2026-Q1 | Internal Use Only*
+> **Project Meta:**
+> * **Version:** 30.2 (Stable Build)
+> * **Status:** Active Production / Operational
+> * **Co-Creation:** Strategic Vision by Product Owner; Technical implementation by Gemini & Llama 3.3.
+> 
