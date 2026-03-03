@@ -387,23 +387,27 @@
 </button>
 
 <div id="settingsPanel" class="fixed inset-0 z-[150] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm hidden">
-    <div class="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-sm overflow-hidden text-left p-8">
+    <div class="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-sm overflow-hidden text-left p-8 border border-slate-100">
         <div class="flex justify-between items-center mb-6">
-            <h3 class="text-xs font-black uppercase tracking-[0.2em] text-slate-400">API Configuration</h3>
-            <button onclick="toggleSettings()" class="text-slate-300 hover:text-slate-900 text-2xl">&times;</button>
+            <h3 class="text-xs font-black uppercase tracking-[0.2em] text-slate-400 italic">API Configurations</h3>
+            <button onclick="toggleSettings()" class="text-slate-300 hover:text-slate-900 text-2xl transition-colors">&times;</button>
         </div>
-        <div class="space-y-6">
+        <div class="space-y-5">
             <div class="space-y-1">
-                <label class="text-[9px] font-black uppercase text-indigo-600 ml-1">Groq API Key</label>
+                <label class="text-[9px] font-black uppercase text-indigo-600 ml-1 italic">Groq API Key (Brain)</label>
                 <input type="password" id="setGroq" class="w-full p-4 bg-slate-50 border rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 text-xs font-mono" placeholder="gsk_...">
             </div>
             <div class="space-y-1">
-                <label class="text-[9px] font-black uppercase text-blue-600 ml-1">Jina AI Token</label>
-                <input type="password" id="setJina" class="w-full p-4 bg-slate-50 border rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 text-xs font-mono" placeholder="jina_...">
+                <label class="text-[9px] font-black uppercase text-blue-600 ml-1 italic">Tavily API Token (Research)</label>
+                <input type="password" id="setTavily" class="w-full p-4 bg-slate-50 border rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 text-xs font-mono" placeholder="tvly-...">
+            </div>
+            <div class="space-y-1">
+                <label class="text-[9px] font-black uppercase text-slate-400 ml-1 italic">Jina AI Token (Crawler)</label>
+                <input type="password" id="setJina" class="w-full p-4 bg-slate-50 border rounded-2xl outline-none focus:ring-2 focus:ring-slate-300 text-xs font-mono" placeholder="jina_...">
             </div>
             <div class="pt-4 space-y-3">
-                <button onclick="saveKeys()" class="w-full bg-slate-900 text-white font-black py-4 rounded-2xl shadow-lg hover:bg-black transition-all uppercase text-[10px] tracking-widest">Save Config</button>
-                <button onclick="clearKeys()" class="w-full text-red-500 font-bold text-[9px] uppercase text-center hover:underline">Clear all keys</button>
+                <button onclick="saveKeys()" class="w-full bg-slate-900 text-white font-black py-4 rounded-2xl shadow-lg hover:bg-black transition-all uppercase text-[10px] tracking-widest italic">Save Master Config</button>
+                <button onclick="clearKeys()" class="w-full text-red-500 font-bold text-[9px] uppercase text-center hover:underline italic">Clear all local keys</button>
             </div>
         </div>
     </div>
@@ -814,20 +818,32 @@ function toggleDetails(index) {
         setTimeout(() => { icon.innerText = "🚚"; }, 3000);
     }
 }
-    function toggleSettings() {
-        const panel = document.getElementById('settingsPanel');
-        if (panel.classList.contains('hidden')) {
-            document.getElementById('setGroq').value = localStorage.getItem('groq_api_key') || '';
-            document.getElementById('setJina').value = localStorage.getItem('jina_token') || '';
-            panel.classList.remove('hidden');
-        } else { panel.classList.add('hidden'); }
+		
+function toggleSettings() {
+    const panel = document.getElementById('settingsPanel');
+    if (panel.classList.contains('hidden')) {
+        // Підтягуємо існуючі ключі з пам'яті
+        document.getElementById('setGroq').value = localStorage.getItem('groq_api_key') || '';
+        document.getElementById('setTavily').value = localStorage.getItem('tavily_api_key') || '';
+        document.getElementById('setJina').value = localStorage.getItem('jina_token') || '';
+        panel.classList.remove('hidden');
+    } else { 
+        panel.classList.add('hidden'); 
     }
+}
 
-    function saveKeys() {
-        localStorage.setItem('groq_api_key', document.getElementById('setGroq').value.trim());
-        localStorage.setItem('jina_token', document.getElementById('setJina').value.trim());
-        alert("Saved! 🚀"); toggleSettings();
-    }
+function saveKeys() {
+    const groq = document.getElementById('setGroq').value.trim();
+    const tavily = document.getElementById('setTavily').value.trim();
+    const jina = document.getElementById('setJina').value.trim();
+
+    localStorage.setItem('groq_api_key', groq);
+    localStorage.setItem('tavily_api_key', tavily);
+    localStorage.setItem('jina_token', jina);
+
+    alert("Configuration Locked & Saved! 🚀"); 
+    toggleSettings();
+}
 
     function clearKeys() { if (confirm("Clear keys?")) { localStorage.clear(); location.reload(); } }
 	// CSV file exporter
@@ -841,71 +857,111 @@ function toggleDetails(index) {
         link.download = "Expertise_Matrix_" + new Date().toISOString().slice(0,10) + ".csv";
         link.click();
     }
-	// Analysis for Summary and Relationship section
+	// Повна версія аналізу: Пошук через Tavily + Аналіз Groq + Синхронізація Supabase
 async function runAdvancedAnalysis(index) {
     const co = companies[index];
     const display = document.getElementById(`summary-display-${index}`);
-    const groqKey = localStorage.getItem('groq_api_key');
     
-    if (!groqKey) { 
-        alert("Please, add Groq API key in settings (⚙️)."); 
+    // Отримання ключів доступу з localStorage
+    const groqKey = localStorage.getItem('groq_api_key');
+    const tavilyKey = localStorage.getItem('tavily_api_key'); 
+    
+    // Перевірка наявності ключів
+    if (!groqKey || !tavilyKey) { 
+        alert("Please, add Groq and Tavily API keys in settings (⚙️)."); 
+        toggleSettings();
         return; 
     }
     
-    if (display) display.innerText = "Refining strategy & financial data... ⏳";
+    if (display) {
+        display.innerText = "🌐 Step 1: Searching live web data via Tavily... ⏳";
+        display.className = "text-[10px] leading-relaxed text-blue-600 font-bold bg-blue-50 p-4 rounded-xl border border-blue-100 italic";
+    }
 
-    const researchText = co.ai_strategic_summary || co.d || "";
+    try {
+        // --- ЕТАП 1: ПОШУК ЧЕРЕЗ TAVILY AI ---
+        const tavilyResponse = await fetch('https://api.tavily.com/search', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                api_key: tavilyKey,
+                query: `Detailed financial performance, annual revenue, EBITDA, and business model of company ${co.n} ${co.u}`,
+                search_depth: "advanced",
+                include_answer: true,
+                max_results: 5
+            })
+        });
 
-    const promptText = `
-        Analyze "${co.n}" using:
-            1. INTERNAL NOTES (Priority): ${existingKnowledge}
-            2. FRESH WEB RESEARCH: ${freshData}
+        if (!tavilyResponse.ok) throw new Error("Tavily Search API Error");
+        
+        const searchData = await tavilyResponse.json();
+        // Формуємо масив знайдених фактів для ШІ
+        const freshData = searchData.results.map(result => `Source: ${result.url}\nContent: ${result.content}`).join('\n\n').substring(0, 15000);
 
-            STRICT FINANCIAL RULES:
-            - Extract EXACT Revenue and EBITDA (e.g., "$5.2B Revenue, 22% EBITDA").
-            - If numbers are missing, provide a professional estimate based on market scale.
-            - Use "B" for Billions, "M" for Millions.
-            - HIERARCHY: If internal notes contradict web data, prioritize internal notes unless web data is a recent financial report.
+        if (display) display.innerText = "🧠 Step 2: Groq is analyzing financials & structuring bullets... ⏳";
 
-            TASK: Write 6-10 detailed sentences for the "summary" field covering:
-            1. Business Model | 2. Exact Financials (Revenue & EBITDA) | 3. Geographic Focus | 4. Ecosystem Role | 5. Software Strategy (Buy vs Own) | 6. Ownership & Key Partners.
+        // --- ЕТАП 2: СТРАТЕГІЧНИЙ АНАЛІЗ ЧЕРЕЗ GROQ ---
+        const promptText = `
+            Analyze the company "${co.n}" based on the following sources.
+            
+            SOURCE 1 (Internal Notes - Priority): ${co.d || "No internal notes provided."}
+            SOURCE 2 (Fresh Web Research): ${freshData}
 
-            Return ONLY JSON:
+            STRICT FORMATTING RULES:
+            1. The "summary" field MUST be a bulleted list using the "•" symbol.
+            2. Each bullet point MUST be on a NEW LINE (use \\n).
+            3. Exactly 6 bullet points total.
+            4. For financials: Use exact figures if found (e.g., "$1.2B Revenue, 20% EBITDA"). If missing, provide a professional estimate based on market scale.
+            5. Use "B" for Billions and "M" for Millions.
+
+            TASK: Create a strategic profile covering:
+            • Business Model: (Hybrid/SaaS/HW)
+            • Financials: (Revenue scale and EBITDA margin/status)
+            • Geography: (Primary markets and HQ)
+            • Ecosystem Role: (OEM/Platform/Tech Partner/Consumer)
+            • Software Strategy: (Own R&D or Buy/Integrate SW)
+            • Ownership/Partners: (Key investors, parent company, or founders)
+
+            Return ONLY a valid JSON object:
             {
-            "summary": "Full 6-point narrative summary...",
-            "revenue": "Low" | "Mid" | "High",
-            "ebitda": "string (e.g. '$1.1B' or '23% margin' or 'Unknown')",
-            "type": "Manufactures HW" | "SaaS/Platform" | "Hybrid Model",
-            "role": "OEM" | "SaaS/Platform" | "Tech Partner" | "Consumer",
-            "region": "EMEA" | "AMER" | "APAC" | "GLOBAL",
-            "share": "Low" | "Mid" | "High",
-            "maturity": "Low" | "Med" | "High",
-            "own_sw": "Yes" | "No",
-            "buy_sw": "Yes" | "No",
-            "growth": "Rapid" | "Stable" | "Declining",
-            "core": "Primary focus areas",
-            "hook": "Strategic entry point"
+                "summary": "• Business Model: ...\\n• Financials: ...\\n• Geography: ...\\n• Ecosystem: ...\\n• Software: ...\\n• Ownership: ...",
+                "revenue": "Low" | "Mid" | "High",
+                "ebitda": "string (e.g. '$1.1B' or '23% margin' or 'Unknown')",
+                "type": "Manufactures HW" | "SaaS/Platform" | "Hybrid Model",
+                "role": "OEM" | "SaaS/Platform" | "Tech Partner" | "Consumer",
+                "region": "EMEA" | "AMER" | "APAC" | "GLOBAL",
+                "share": "Low" | "Mid" | "High",
+                "maturity": "Low" | "Med" | "High",
+                "own_sw": "Yes" | "No",
+                "buy_sw": "Yes" | "No",
+                "growth": "Rapid" | "Stable" | "Declining",
+                "core": "Primary focus areas",
+                "hook": "Strategic entry point"
             }
         `;
 
-    try {
-        const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${groqKey}` },
+            headers: { 
+                'Content-Type': 'application/json', 
+                'Authorization': `Bearer ${groqKey}` 
+            },
             body: JSON.stringify({
                 model: "llama-3.3-70b-versatile",
                 messages: [
-                    { role: "system", content: "You are a Senior Strategic Financial Analyst. Return ONLY valid JSON." },
+                    { role: "system", content: "You are a Senior Financial Analyst specializing in logistics technology. Use '•' and new lines for lists. Return valid JSON." },
                     { role: "user", content: promptText }
                 ],
                 response_format: { "type": "json_object" }
             })
         });
 
-        const result = await resp.json();
+        if (!groqResponse.ok) throw new Error("Groq API Analysis Error");
+
+        const result = await groqResponse.json();
         const ai = JSON.parse(result.choices[0].message.content);
 
-        // Sync with Supabase
+        // --- ЕТАП 3: СИНХРОНІЗАЦІЯ З SUPABASE ---
         const { error } = await sb.from('companies').update({
             ai_strategic_summary: ai.summary,
             revenue_tier: ai.revenue,
@@ -924,7 +980,7 @@ async function runAdvancedAnalysis(index) {
 
         if (error) throw error;
 
-        // local masive refresh
+        // --- ЕТАП 4: ОНОВЛЕННЯ ЛОКАЛЬНИХ ДАНИХ ТА ІНТЕРФЕЙСУ ---
         companies[index] = { 
             ...co, 
             ...ai, 
@@ -935,13 +991,19 @@ async function runAdvancedAnalysis(index) {
         
         if (display) {
             display.innerText = ai.summary;
-            display.className = "text-[10px] leading-relaxed text-indigo-800 font-bold bg-indigo-50 p-3 rounded-lg border border-indigo-100 italic";
+            display.style.whiteSpace = "pre-line"; // Критично для відображення булетів у стовпчик
+            display.className = "text-[10px] leading-relaxed text-slate-700 font-medium bg-white p-4 rounded-2xl border border-slate-200 shadow-sm text-left";
         }
         
+        console.log(`✅ Financial analysis for ${co.n} completed and saved.`);
+
     } catch (err) {
-        console.error("Analysis Error:", err);
-        if (display) display.innerText = "Error refining data. Check console.";
-        alert("Failed to sync financial data.");
+        console.error("Advanced Analysis Error:", err);
+        if (display) {
+            display.innerText = `Analysis Failed: ${err.message}. Check your API keys and Internet connection.`;
+            display.className = "text-[10px] text-red-600 font-bold bg-red-50 p-4 rounded-xl border border-red-100";
+        }
+        alert(`Error: ${err.message}`);
     }
 }
 
