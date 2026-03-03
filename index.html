@@ -468,17 +468,22 @@ function setViewMode(mode) {
         render();
     }
 
-    function getSimilarity(co, base) {
-        if (!base) return 0;
-        if (co.n === base.n) return -1;
-        let score = 0;
-        if (co.b === base.b) score += 40; 
-        if (co.t === base.t) score += 30; 
-        if (co.er === base.er) score += 15;
-        if (co.ms === base.ms) score += 10;
-        if (co.c?.split(',')[0].trim() === base.c?.split(',')[0].trim()) score += 5;
-        return score;
+function getSimilarity(co, base) {
+    if (!base) return 0;
+    if (co.n === base.n) return -1;
+    let score = 0;
+    if (co.b === base.b) score += 40; 
+    // Гнучке порівняння моделей (Hybrid дружить з HW та SaaS)
+    if (co.t === base.t) { score += 30; }
+    else if ((co.t === 'Hybrid Model' && (base.t === 'Manufactures HW' || base.t === 'SaaS/Platform')) ||
+             (base.t === 'Hybrid Model' && (co.t === 'Manufactures HW' || co.t === 'SaaS/Platform'))) {
+        score += 20; 
     }
+    if (co.er === base.er) score += 15;
+    if (co.ms === base.ms) score += 10;
+    if (co.c?.split(',')[0].trim() === base.c?.split(',')[0].trim()) score += 5;
+    return score;
+}
 
     function openModalForAdd() {
         document.getElementById('editIndex').value = "-1";
@@ -493,6 +498,7 @@ function setViewMode(mode) {
         document.getElementById('editIndex').value = idx;
         document.getElementById('deleteBtn').style.display = 'block';
         document.getElementById('modalTitle').innerText = "Edit Strategy: " + co.n;
+		document.getElementById('formEbitda').value = co.ebitda || '';
         
         document.getElementById('formName').value = co.n || '';
         document.getElementById('formUrl').value = co.u || '';
@@ -520,6 +526,7 @@ function setViewMode(mode) {
         e.preventDefault();
         const idx = parseInt(document.getElementById('editIndex').value);
         const co = {
+			ebitda: document.getElementById('formEbitda').value,
             n: document.getElementById('formName').value,
             u: document.getElementById('formUrl').value,
             t: document.getElementById('formType').value,
@@ -677,21 +684,21 @@ function toggleDetails(index) {
         detailsBox.classList.add('hidden');
     }
 }
-    async function deepCheckCompanyAI() {
+ async function deepCheckCompanyAI() {
     const name = document.getElementById('formName').value;
     const url = document.getElementById('formUrl').value;
     const btn = document.getElementById('deepCheckBtn');
     const icon = document.getElementById('deepIcon');
 
-    // Get awailable context for AI analysis (Hierarchy of Truth)
+    // Отримуємо існуючий контекст для аналізу
     const idx = parseInt(document.getElementById('editIndex').value);
     const existingKnowledge = idx !== -1 ? (companies[idx].ai_strategic_summary || companies[idx].d || "") : "";
 
     const groqKey = localStorage.getItem('groq_api_key');
-    const jinaToken = localStorage.getItem('jina_token');
+    const tavilyKey = localStorage.getItem('tavily_api_key'); // Використовуємо Tavily
 
-    if (!groqKey || !jinaToken) {
-        alert("Please, add Groq and Jina API keys in settings (⚙️).");
+    if (!groqKey || !tavilyKey) {
+        alert("Please, add Groq and Tavily API keys in settings (⚙️).");
         toggleSettings();
         return;
     }
@@ -700,39 +707,36 @@ function toggleDetails(index) {
     icon.innerText = "⏳";
 
     try {
-        console.log("🚚 Starting Full Strategic Research for:", name);
+        console.log("🚚 Tavily is researching company:", name);
 
-        // 1. Deep research with Jina AI crawler (Please tune or change for other crawler which can make more friendly markdown and crawl few pages not 1) OR extend settings for different LLM API keys
-        const searchQuery = `detailed business model, revenue scale, ecosystem role, software strategy (build vs buy), and major partners for company ${name} ${url}`;
-        const responseJina = await fetch(`https://s.jina.ai/${encodeURIComponent(searchQuery)}`, {
-            headers: { 
-                'Authorization': `Bearer ${jinaToken}`, 
-                'Accept': 'application/json' 
-            }
+        // 1. Пошук фактів через Tavily (Multi-source research)
+        const tavilyResponse = await fetch('https://api.tavily.com/search', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                api_key: tavilyKey,
+                query: `detailed business model, annual revenue, EBITDA, ecosystem role, software strategy, and major partners for ${name} ${url}`,
+                search_depth: "advanced",
+                max_results: 5
+            })
         });
 
-        if (!responseJina.ok) throw new Error("Jina Search Failed");
-        const jinaData = await responseJina.json();
-        const freshResearch = jinaData.data.map(item => item.content).join('\n').substring(0, 15000);
+        if (!tavilyResponse.ok) throw new Error("Tavily Search Failed");
+        const searchData = await tavilyResponse.json();
+        const freshResearch = searchData.results.map(r => r.content).join('\n\n').substring(0, 15000);
 
-        // 2. Prompt section for research
+        // 2. Аналіз через Groq
         const promptText = `
-            Analyze the company "${name}" based on provided research and existing internal knowledge.
+            Analyze the company "${name}" based on provided research and internal knowledge.
 
             SOURCES:
-            1. INTERNAL KNOWLEDGE (Priority): ${existingKnowledge}
+            1. INTERNAL KNOWLEDGE: ${existingKnowledge}
             2. FRESH RESEARCH DATA: ${freshResearch}
 
             STRICT RULES:
-            1. HIERARCHY OF TRUTH: Use Internal Knowledge as the absolute primary source. Fresh Research should only supplement missing facts. DO NOT contradict the industry or core focus found in Internal Knowledge.
-            2. FINANCIAL SCALE (Strictly apply):
-               - LOW Share: <$1B | MID: $1B - $10B | HIGH: >$10B.
-            3. NO HALLUCINATIONS: If data is missing in both sources, return "UNKNOWN" for that specific field.
-
-            TASK: Create a strategic profile.
-            For the "summary" field, write a professional executive summary (max 1 abstract).
-            YOU MUST COVER THESE 6 POINTS in the summary:
-            1. Business Model | 2. Revenue Scale | 3. Geographic Focus | 4. Ecosystem Role | 5. Software Strategy | 6. KEY RELATIONSHIPS.
+            1. FINANCIALS: Extract exact Revenue and EBITDA. 
+            2. SCALE: LOW Share: <$1B | MID: $1B - $10B | HIGH: >$10B.
+            3. NO HALLUCINATIONS: If data is missing, return "UNKNOWN".
 
             Return ONLY a JSON object:
             {
@@ -744,6 +748,7 @@ function toggleDetails(index) {
                 "own_sw": "Yes" | "No" | "UNKNOWN",
                 "buy_sw": "Yes" | "No" | "UNKNOWN",
                 "revenue": "Low" | "Mid" | "High" | "UNKNOWN",
+                "ebitda": "string (Exact value or % margin)",
                 "growth": "Rapid" | "Stable" | "Declining" | "UNKNOWN",
                 "core": "Primary focus areas",
                 "hook": "Strategic entry point",
@@ -753,43 +758,23 @@ function toggleDetails(index) {
             }
         `;
 
-			// Replace Jina fetch with Firecrawl EXAMPLE
-			//const responseFire = await fetch('https://api.firecrawl.dev/v1/scrape', {
-    		//method: 'POST',
-    		//headers: {
-        	//'Content-Type': 'application/json',
-        	//'Authorization': `Bearer ${firecrawlToken}`
-    		//},
-    		//body: JSON.stringify({
-        	//url: url,
-        	//formats: ['markdown']
-   			// })
-			//});
-			//const fireData = await responseFire.json();
-			//const researchText = fireData.data.markdown; // Clean text for Groq
-
         const responseGroq = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json', 
-                'Authorization': `Bearer ${groqKey}` 
-            },
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${groqKey}` },
             body: JSON.stringify({
                 model: "llama-3.3-70b-versatile",
                 messages: [
-                    { role: "system", content: "You are a Senior Strategic Analyst with deep knowledge in logistics. Return ONLY valid JSON." },
+                    { role: "system", content: "You are a Senior Strategic Analyst. Return ONLY valid JSON." },
                     { role: "user", content: promptText }
                 ],
                 response_format: { "type": "json_object" }
             })
         });
 
-        if (!responseGroq.ok) throw new Error("Groq API Error");
-
         const result = await responseGroq.json();
         const ai = JSON.parse(result.choices[0].message.content);
 
-        // 3. Results mapping using ID's
+        // 3. Results mapping to Form fields
         const safeSet = (id, val) => {
             const el = document.getElementById(id);
             if (el) el.value = (val === "UNKNOWN") ? '' : (val || '');
@@ -803,16 +788,15 @@ function toggleDetails(index) {
         safeSet('formOwn', ai.own_sw);
         safeSet('formBuy', ai.buy_sw);
         safeSet('formRevenue', ai.revenue);
+        safeSet('formEbitda', ai.ebitda); // <--- Тепер це працюватиме!
         safeSet('formGrowth', ai.growth);
         safeSet('formCore', ai.core);
         safeSet('formEntryPoint', ai.hook);
         safeSet('formExp', ai.expertise);
         safeSet('formDesc', ai.description);
         safeSet('formAiSummary', ai.summary);
-		safeSet('formEbitda', ai.ebitda);
 
         icon.innerText = "✅";
-        console.log("Strategic research completed successfully.");
 
     } catch (error) {
         console.error("Deep Research Error:", error);
