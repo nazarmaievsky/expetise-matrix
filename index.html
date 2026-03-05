@@ -674,12 +674,12 @@ function render() {
     const fSegment = document.getElementById('segmentFilter')?.value || "all";
     const baseCo = currentLookalike !== "none" ? companies.find(c => c.n === currentLookalike) : null;
 
-    // Словник ієрархії для розумного фільтра
+    // Мапінг без Next-Gen
     const macroMapping = {
         "Asset Producers": ["Connected OEMs", "Smart Trailer", "Smart Containers", "Rail Freight Digitalization"],
         "Asset Operators": ["Connected Fleet Intelligence", "Freight Intelligence", "Global Freight", "Intermodal"],
-        "Platform & Data Backbone": ["Logistics Orchestration", "Industrial IoT", "AI-Driven Logistics", "FMS", "TMS"],
-            };
+        "Platform & Data Backbone": ["Logistics Orchestration", "Industrial IoT", "AI-Driven Logistics", "FMS", "TMS"]
+    };
 
     let data = companies.map((co, originalIdx) => {
         const coSegment = co.segment || "";
@@ -687,17 +687,13 @@ function render() {
                               coSegment.toLowerCase().includes(searchQuery) ||
                               (co.c || "").toLowerCase().includes(searchQuery);
 
-        // Логіка ієрархічного фільтра
         let matchesSegment = false;
         if (fSegment === 'all') {
             matchesSegment = true;
         } else if (macroMapping[fSegment]) {
-            // Якщо вибрано КЛАСТЕР (напр. "Asset Producers")
-            // Показуємо, якщо назва кластера є в сегменті АБО якщо сегмент містить будь-який під-сегмент із мапи
             matchesSegment = coSegment.includes(fSegment) || 
                              macroMapping[fSegment].some(sub => coSegment.includes(sub));
         } else {
-            // Якщо вибрано конкретний під-сегмент
             matchesSegment = coSegment.includes(fSegment);
         }
 
@@ -727,18 +723,17 @@ function render() {
         } else {
             const row = document.createElement('tr');
             row.className = `group hover:bg-slate-50 transition-all ${co.ssm >= 70 ? 'row-lookalike' : ''}`;
-            // ... (сюди встав свій існуючий row.innerHTML для звичайної таблиці)
             row.innerHTML = `
                 <td class="p-6">
-                    <div class="flex flex-col">
-                        <a href="${co.u}" target="_blank" class="text-sm font-black uppercase tracking-tighter text-slate-800 hover:text-indigo-600 transition-all italic underline decoration-slate-200 decoration-2 underline-offset-4">${co.n}</a>
+                    <div class="flex flex-col truncate">
+                        <a href="${co.u}" target="_blank" class="text-sm font-black uppercase tracking-tighter text-slate-800 hover:text-indigo-600 transition-all italic underline decoration-slate-200 decoration-2 underline-offset-4 truncate">${co.n}</a>
                         <span class="text-[9px] text-slate-400 font-bold uppercase mt-1 tracking-widest">${co.r || 'GLOBAL'}</span>
                     </div>
                     <button onclick="toggleDetails(${co.originalIdx})" class="mt-2 text-[8px] text-indigo-500 font-black uppercase hover:underline no-print block">Summary & Research</button>
                     <div id="details-${co.originalIdx}" class="hidden mt-3"></div>
                 </td>
                 <td class="p-4">
-                    <div class="text-[10px] font-black text-indigo-900 bg-indigo-50/50 px-3 py-2 rounded-xl border border-indigo-100 uppercase italic leading-tight text-center">
+                    <div class="text-[10px] font-black text-indigo-900 bg-indigo-50/50 px-3 py-2 rounded-xl border border-indigo-100 uppercase italic leading-tight text-center break-words">
                         ${co.segment || 'Other / Tech'}
                     </div>
                 </td>
@@ -755,7 +750,7 @@ function render() {
                     </div>
                 </td>
                 <td class="p-6">
-                    <div class="text-[10px] font-bold text-slate-800 uppercase italic leading-tight max-w-[180px]">${co.c || ''}</div>
+                    <div class="text-[10px] font-bold text-slate-800 uppercase italic leading-tight break-words">${co.c || ''}</div>
                 </td>
                 <td class="p-6 text-center no-print">
                     <button onclick="openModalForEdit(${co.originalIdx})" class="p-3 bg-white border border-slate-200 rounded-2xl shadow-sm hover:bg-slate-900 hover:text-white transition-all">
