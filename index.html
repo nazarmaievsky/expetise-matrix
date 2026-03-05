@@ -228,32 +228,53 @@
                 </div>
             </div>
 
-<div class="p-5 bg-indigo-50/50 rounded-[2rem] border-2 border-indigo-100 grid grid-cols-2 gap-4">
-    <div class="space-y-1">
-        <label class="text-[9px] font-black uppercase text-indigo-400 ml-2">Revenue Tier</label>
-        <select id="formRevenue" class="w-full p-3 bg-white border rounded-xl text-xs font-black outline-none">
-            <option value="Low">Low (< $1B)</option>
-            <option value="Mid">Mid ($1B - $10B)</option>
-            <option value="High">High (> $10B)</option>
-        </select>
+<div class="p-5 bg-indigo-50/50 rounded-[2rem] border-2 border-indigo-100 space-y-4">
+    <div class="grid grid-cols-2 gap-4">
+        <div class="space-y-1">
+            <label class="text-[9px] font-black uppercase text-indigo-400 ml-2 italic">Revenue Tier</label>
+            <select id="formRevenue" class="w-full p-3 bg-white border rounded-xl text-xs font-black outline-none">
+                <option value="Low">Low (< $1B)</option>
+                <option value="Mid">Mid ($1B - $10B)</option>
+                <option value="High">High (> $10B)</option>
+            </select>
+        </div>
+        <div class="space-y-1">
+            <label class="text-[9px] font-black uppercase text-indigo-400 ml-2 italic">Growth Rate</label>
+            <select id="formGrowth" class="w-full p-3 bg-white border rounded-xl text-xs font-black outline-none">
+                <option value="Stable">Stable</option>
+                <option value="Rapid">Rapid 🚀</option>
+                <option value="Declining">Declining</option>
+            </select>
+        </div>
     </div>
-                <div class="space-y-1">
-                    <label class="text-[9px] font-black uppercase text-indigo-400 ml-2">Growth Rate</label>
-                    <select id="formGrowth" class="w-full p-3 bg-white border rounded-xl text-xs font-black outline-none">
-                        <option value="Stable">Stable</option>
-                        <option value="Rapid">Rapid 🚀</option>
-                        <option value="Declining">Declining</option>
-                    </select>
-                </div>
-	<div class="space-y-1">
-        <label class="text-[9px] font-black uppercase text-indigo-400 ml-2">EBITDA Status</label>
-        <input type="text" id="formEbitda" class="w-full p-3 bg-white border rounded-xl text-xs font-black outline-none" placeholder="e.g. 22% or $1.1B">
+
+    <div class="grid grid-cols-2 gap-4 border-t border-indigo-100 pt-3">
+        <div class="space-y-1">
+            <label class="text-[9px] font-black uppercase text-indigo-600 ml-2 italic">Exact Revenue (Annual)</label>
+            <input type="text" id="formRevenueExact" class="w-full p-3 bg-white border rounded-xl text-xs font-black outline-none text-indigo-900" placeholder="e.g. $1.2B">
+        </div>
+        <div class="space-y-1">
+            <label class="text-[9px] font-black uppercase text-indigo-600 ml-2 italic">Total Employees</label>
+            <input type="text" id="formEmployee" class="w-full p-3 bg-white border rounded-xl text-xs font-black outline-none text-indigo-900" placeholder="e.g. 15,000">
+        </div>
     </div>
-               <div class="space-y-1 col-span-2">
-    					<label class="text-[9px] font-black uppercase text-indigo-600 ml-2">AI Strategic Summary (Redundant Data)</label>
-    					<textarea id="formAiSummary" rows="2" class="w-full p-4 bg-indigo-50/50 border border-indigo-100 rounded-2xl outline-none text-xs font-bold text-indigo-900" placeholder="AI Analysis will appear here"></textarea>
-			</div>
-            </div>
+
+    <div class="grid grid-cols-2 gap-4 border-t border-indigo-100 pt-3">
+        <div class="space-y-1">
+            <label class="text-[9px] font-black uppercase text-indigo-400 ml-2 italic">EBITDA Status</label>
+            <input type="text" id="formEbitda" class="w-full p-3 bg-white border rounded-xl text-xs font-black outline-none" placeholder="e.g. 22% margin">
+        </div>
+        <div class="space-y-1">
+            <label class="text-[9px] font-black uppercase text-indigo-900 ml-2 italic">Strategic Segment</label>
+            <input type="text" id="formSegment" class="w-full p-3 bg-white border-2 border-indigo-200 rounded-xl text-[10px] font-black outline-none bg-indigo-50 text-indigo-900" placeholder="Mapping segment...">
+        </div>
+    </div>
+
+    <div class="space-y-1 pt-2 border-t border-indigo-100">
+        <label class="text-[9px] font-black uppercase text-indigo-600 ml-2">AI Strategic Summary</label>
+        <textarea id="formAiSummary" rows="2" class="w-full p-4 bg-white/50 border border-indigo-100 rounded-2xl outline-none text-xs font-bold text-indigo-900" placeholder="AI Analysis will appear here"></textarea>
+    </div>
+</div>
 
             <div class="grid grid-cols-2 gap-4">
                 <div class="space-y-1">
@@ -499,6 +520,9 @@ function getSimilarity(co, base) {
         document.getElementById('deleteBtn').style.display = 'block';
         document.getElementById('modalTitle').innerText = "Edit Strategy: " + co.n;
 		document.getElementById('formEbitda').value = co.ebitda || '';
+		document.getElementById('formRevenueExact').value = co.revenue || '';
+		document.getElementById('formEmployee').value = co.employee || '';
+		document.getElementById('formSegment').value = co.segment || '';
         
         document.getElementById('formName').value = co.n || '';
         document.getElementById('formUrl').value = co.u || '';
@@ -541,6 +565,9 @@ function getSimilarity(co, base) {
             exp: document.getElementById('formExp').value.split(',').map(s => s.trim()).filter(s => s !== ""),
             d: document.getElementById('formDesc').value,
             revenue_tier: document.getElementById('formRevenue').value,
+			revenue: document.getElementById('formRevenueExact').value,
+			employee: document.getElementById('formEmployee').value,
+			segment: document.getElementById('formSegment').value,
             growth_rate: document.getElementById('formGrowth').value,
             ai_strategic_summary: document.getElementById('formAiSummary').value,
             sig: "Warm"
@@ -690,12 +717,12 @@ function toggleDetails(index) {
     const btn = document.getElementById('deepCheckBtn');
     const icon = document.getElementById('deepIcon');
 
-    // Отримуємо існуючий контекст для аналізу
     const idx = parseInt(document.getElementById('editIndex').value);
+    // Пріоритет на існуючий AI-аналіз (Hierarchy of Truth)
     const existingKnowledge = idx !== -1 ? (companies[idx].ai_strategic_summary || companies[idx].d || "") : "";
 
     const groqKey = localStorage.getItem('groq_api_key');
-    const tavilyKey = localStorage.getItem('tavily_api_key'); // Використовуємо Tavily
+    const tavilyKey = localStorage.getItem('tavily_api_key'); 
 
     if (!groqKey || !tavilyKey) {
         alert("Please, add Groq and Tavily API keys in settings (⚙️).");
@@ -707,15 +734,12 @@ function toggleDetails(index) {
     icon.innerText = "⏳";
 
     try {
-        console.log("🚚 Tavily is researching company:", name);
-
-        // 1. Пошук фактів через Tavily (Multi-source research)
         const tavilyResponse = await fetch('https://api.tavily.com/search', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 api_key: tavilyKey,
-                query: `detailed business model, annual revenue, EBITDA, ecosystem role, software strategy, and major partners for ${name} ${url}`,
+                query: `detailed business model, annual revenue, EBITDA, number of employees, and strategic segment for ${name} ${url}`,
                 search_depth: "advanced",
                 max_results: 5
             })
@@ -725,18 +749,18 @@ function toggleDetails(index) {
         const searchData = await tavilyResponse.json();
         const freshResearch = searchData.results.map(r => r.content).join('\n\n').substring(0, 15000);
 
-        // 2. Аналіз через Groq
         const promptText = `
-            Analyze the company "${name}" based on provided research and internal knowledge.
+            Analyze the company "${name}" based on research and existing base.
+
+            STRATEGIC SEGMENT CATEGORIES:
+            - Asset Producers: Connected OEMs, Smart Trailer, Smart Containers, Rail Freight Digitalization.
+            - Asset Operators: Connected Fleet Intelligence, Freight Intelligence, Global Freight & Intermodal.
+            - Platform & Data Backbone: Logistics Orchestration (FMS/TMS), Industrial IoT, AI-Driven Logistics.
+            - Next-Gen & Future Mobility: Autonomous/ADAS, V2X, Smart Infrastructure.
 
             SOURCES:
-            1. INTERNAL KNOWLEDGE: ${existingKnowledge}
-            2. FRESH RESEARCH DATA: ${freshResearch}
-
-            STRICT RULES:
-            1. FINANCIALS: Extract exact Revenue and EBITDA. 
-            2. SCALE: LOW Share: <$1B | MID: $1B - $10B | HIGH: >$10B.
-            3. NO HALLUCINATIONS: If data is missing, return "UNKNOWN".
+            1. STRATEGIC BASE (Priority): ${existingKnowledge}
+            2. FRESH RESEARCH: ${freshResearch}
 
             Return ONLY a JSON object:
             {
@@ -744,17 +768,20 @@ function toggleDetails(index) {
                 "role": "OEM" | "SaaS/Platform" | "Tech Partner" | "Consumer" | "UNKNOWN",
                 "region": "EMEA" | "AMER" | "APAC" | "GLOBAL" | "UNKNOWN",
                 "share": "Low" | "Mid" | "High" | "UNKNOWN",
+                "revenue_exact": "string (Exact revenue figure)",
+                "employees": "string (Number of employees)",
+                "segment": "Choose one from categories above",
                 "maturity": "Low" | "Med" | "High" | "UNKNOWN",
                 "own_sw": "Yes" | "No" | "UNKNOWN",
                 "buy_sw": "Yes" | "No" | "UNKNOWN",
                 "revenue": "Low" | "Mid" | "High" | "UNKNOWN",
-                "ebitda": "string (Exact value or % margin)",
+                "ebitda": "string",
                 "growth": "Rapid" | "Stable" | "Declining" | "UNKNOWN",
                 "core": "Primary focus areas",
                 "hook": "Strategic entry point",
-                "expertise": "Keyword1, Keyword2, Keyword3",
-                "summary": "The integrated 6-point narrative summary here",
-                "description": "Tactical analysis anchored to research data."
+                "expertise": "Keyword1, Keyword2",
+                "summary": "Integrated 6-point narrative",
+                "description": "Tactical analysis"
             }
         `;
 
@@ -764,7 +791,7 @@ function toggleDetails(index) {
             body: JSON.stringify({
                 model: "llama-3.3-70b-versatile",
                 messages: [
-                    { role: "system", content: "You are a Senior Strategic Analyst. Return ONLY valid JSON." },
+                    { role: "system", content: "Senior Strategic Analyst. Return ONLY valid JSON." },
                     { role: "user", content: promptText }
                 ],
                 response_format: { "type": "json_object" }
@@ -774,7 +801,6 @@ function toggleDetails(index) {
         const result = await responseGroq.json();
         const ai = JSON.parse(result.choices[0].message.content);
 
-        // 3. Results mapping to Form fields
         const safeSet = (id, val) => {
             const el = document.getElementById(id);
             if (el) el.value = (val === "UNKNOWN") ? '' : (val || '');
@@ -788,13 +814,16 @@ function toggleDetails(index) {
         safeSet('formOwn', ai.own_sw);
         safeSet('formBuy', ai.buy_sw);
         safeSet('formRevenue', ai.revenue);
-        safeSet('formEbitda', ai.ebitda); // <--- Тепер це працюватиме!
+        safeSet('formEbitda', ai.ebitda);
         safeSet('formGrowth', ai.growth);
         safeSet('formCore', ai.core);
         safeSet('formEntryPoint', ai.hook);
         safeSet('formExp', ai.expertise);
         safeSet('formDesc', ai.description);
         safeSet('formAiSummary', ai.summary);
+        safeSet('formRevenueExact', ai.revenue_exact);
+        safeSet('formEmployee', ai.employees);
+        safeSet('formSegment', ai.segment);
 
         icon.innerText = "✅";
 
@@ -911,10 +940,19 @@ async function runAdvancedAnalysis(index) {
             • Software Strategy: (Own R&D or Buy/Integrate SW)
             • Ownership/Partners: (Key investors, parent company, or founders)
 
+			STRATEGIC SEGMENT CATEGORIES (Choose the most relevant based on your research):
+    		Asset Producers: Connected OEMs, Smart Trailer, Smart Containers, Rail Freight Digitalization.
+    		Asset Operators: Connected Fleet Intelligence, Freight Intelligence, Global Freight & Intermodal.
+    		Platform & Data Backbone: Logistics Orchestration (FMS/TMS), Industrial IoT, AI-Driven Logistics.
+    		Next-Gen & Future Mobility: Autonomous/ADAS, V2X, Smart Infrastructure.
+
             Return ONLY a valid JSON object:
             {
                 "summary": "• Business Model: ...\\n• Financials: ...\\n• Geography: ...\\n• Ecosystem: ...\\n• Software: ...\\n• Ownership: ...",
                 "revenue": "Low" | "Mid" | "High",
+				"revenue_exact": "string (Exact revenue figure if found)",
+        		"employees": "string (Number of employees)",
+        		"segment": "Choose one from the Strategic Categories above",
                 "ebitda": "string (e.g. '$1.1B' or '23% margin' or 'Unknown')",
                 "type": "Manufactures HW" | "SaaS/Platform" | "Hybrid Model",
                 "role": "OEM" | "SaaS/Platform" | "Tech Partner" | "Consumer",
@@ -954,6 +992,9 @@ async function runAdvancedAnalysis(index) {
         const { error } = await sb.from('companies').update({
             ai_strategic_summary: ai.summary,
             revenue_tier: ai.revenue,
+			revenue: ai.revenue_exact, 
+    		employee: ai.employees,    
+    		segment: ai.segment,
             ebitda: ai.ebitda,
             t: ai.type,
             er: ai.role,
