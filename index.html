@@ -879,12 +879,9 @@ function saveKeys() {
 async function runAdvancedAnalysis(index) {
     const co = companies[index];
     const display = document.getElementById(`summary-display-${index}`);
-    
-    // Отримання ключів доступу з localStorage
     const groqKey = localStorage.getItem('groq_api_key');
     const tavilyKey = localStorage.getItem('tavily_api_key'); 
     
-    // Перевірка наявності ключів
     if (!groqKey || !tavilyKey) { 
         alert("Please, add Groq and Tavily API keys in settings (⚙️)."); 
         toggleSettings();
@@ -892,70 +889,50 @@ async function runAdvancedAnalysis(index) {
     }
     
     if (display) {
-        display.innerText = "🌐 Step 1: Searching live web data via Tavily... ⏳";
+        display.innerText = "🌐 Step 1: Searching live web data... ⏳";
         display.className = "text-[10px] leading-relaxed text-blue-600 font-bold bg-blue-50 p-4 rounded-xl border border-blue-100 italic";
     }
 
     try {
-        // --- ЕТАП 1: ПОШУК ЧЕРЕЗ TAVILY AI ---
+        // --- STEP 1: TAVILY SEARCH ---
         const tavilyResponse = await fetch('https://api.tavily.com/search', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 api_key: tavilyKey,
-                query: `Detailed financial performance, annual revenue, EBITDA, and business model of company ${co.n} ${co.u}`,
+                query: `Detailed financials, revenue 2024-2025, EBITDA, employee count, and strategic segment for ${co.n} ${co.u}`,
                 search_depth: "advanced",
-                include_answer: true,
                 max_results: 5
             })
         });
 
         if (!tavilyResponse.ok) throw new Error("Tavily Search API Error");
-        
         const searchData = await tavilyResponse.json();
-        // Формуємо масив знайдених фактів для ШІ
-        const freshData = searchData.results.map(result => `Source: ${result.url}\nContent: ${result.content}`).join('\n\n').substring(0, 15000);
+        const freshData = searchData.results.map(r => r.content).join('\n\n').substring(0, 15000);
 
-        if (display) display.innerText = "🧠 Step 2: Groq is analyzing financials & structuring bullets... ⏳";
+        if (display) display.innerText = "🧠 Step 2: Analyzing & Mapping Segments... ⏳";
 
-        // --- ЕТАП 2: СТРАТЕГІЧНИЙ АНАЛІЗ ЧЕРЕЗ GROQ ---
+        // --- STEP 2: GROQ ANALYSIS ---
         const promptText = `
-            Analyze the company "${co.n}" based on the following sources.
-            
-            SOURCE 1 (Internal Notes - Priority): ${co.d || "No internal notes provided."}
-            SOURCE 2 (Fresh Web Research): ${freshData}
+            Analyze "${co.n}" using these sources:
+            BASE KNOWLEDGE: ${co.ai_strategic_summary || co.d || "None"}
+            FRESH DATA: ${freshData}
 
-            STRICT FORMATTING RULES:
-            1. The "summary" field MUST be a bulleted list using the "•" symbol.
-            2. Each bullet point MUST be on a NEW LINE (use \\n).
-            3. Not more than 10 bullet points total.
-            4. For financials: Use exact figures if found (e.g., "$1.2B Revenue, 20% EBITDA"). If missing, provide a professional estimate based on market scale.
-            5. Use "B" for Billions and "M" for Millions.
+            STRATEGIC SEGMENTS (Pick ONE):
+            - Asset Producers: Connected OEMs, Smart Trailer, Smart Containers, Rail Freight Digitalization.
+            - Asset Operators: Connected Fleet Intelligence, Freight Intelligence, Global Freight & Intermodal.
+            - Platform & Data Backbone: Logistics Orchestration (FMS/TMS), Industrial IoT, AI-Driven Logistics.
+            - Next-Gen & Future Mobility: Autonomous/ADAS, V2X, Smart Infrastructure.
 
-            TASK: Create a strategic profile covering:
-            • Business Model: (Hybrid/SaaS/HW)
-            • Financials: (Revenue scale and EBITDA margin/status)
-			• Employees: (How many empolyees working on company)
-            • Geography: (Primary markets and HQ)
-            • Ecosystem Role: (OEM/Platform/Tech Partner/Consumer)
-            • Software Strategy: (Own R&D or Buy/Integrate SW)
-            • Ownership/Partners: (Key investors, parent company, or founders)
-			
-
-			STRATEGIC SEGMENT CATEGORIES (Choose the most relevant based on your research):
-    		Asset Producers: Connected OEMs, Smart Trailer, Smart Containers, Rail Freight Digitalization.
-    		Asset Operators: Connected Fleet Intelligence, Freight Intelligence, Global Freight & Intermodal.
-    		Platform & Data Backbone: Logistics Orchestration (FMS/TMS), Industrial IoT, AI-Driven Logistics.
-    		Next-Gen & Future Mobility: Autonomous/ADAS, V2X, Smart Infrastructure.
-
-            Return ONLY a valid JSON object:
+            Return ONLY valid JSON:
             {
-                "summary": "• Business Model: ...\\n• Financials: ...\\n• Geography: ...\\n• Ecosystem: ...\\n• Software: ...\\n• Ownership: ...",
-                "revenue": "Low" | "Mid" | "High",
-				"revenue_exact": "string (Exact revenue figure if found)",
-        		"employees": "string (Number of employees)",
-        		"segment": "Choose one from the Strategic Categories above",
-                "ebitda": "string (e.g. '$1.1B' or '23% margin' or 'Unknown')",
+                "summary": "• Business Model: ...\\n• Financials: ...\\n• Geography: ...\\n• Ecosystem: ...\\n• Software: ...\\n• Ownership: ...\\n• Employees ...",
+                "revenue_exact": "string (e.g. $1.2B)",
+                "employees": "string (e.g. 15,000)",
+                "segment": "One specific segment from the list above",
+                "revenue_tier": "Low" | "Mid" | "High",
+                "ebitda": "string",
+                "growth": "Rapid" | "Stable" | "Declining",
                 "type": "Manufactures HW" | "SaaS/Platform" | "Hybrid Model",
                 "role": "OEM" | "SaaS/Platform" | "Tech Partner" | "Consumer",
                 "region": "EMEA" | "AMER" | "APAC" | "GLOBAL",
@@ -963,40 +940,40 @@ async function runAdvancedAnalysis(index) {
                 "maturity": "Low" | "Med" | "High",
                 "own_sw": "Yes" | "No",
                 "buy_sw": "Yes" | "No",
-                "growth": "Rapid" | "Stable" | "Declining",
-                "core": "Primary focus areas",
-                "hook": "Strategic entry point"
+                "core": "string",
+                "hook": "string"
             }
         `;
 
         const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json', 
-                'Authorization': `Bearer ${groqKey}` 
-            },
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${groqKey}` },
             body: JSON.stringify({
                 model: "llama-3.3-70b-versatile",
                 messages: [
-                    { role: "system", content: "You are a Senior Financial Analyst specializing in logistics technology. Use '•' and new lines for lists. Return valid JSON." },
+                    { role: "system", content: "Senior Financial Analyst. Use '•' and new lines for lists. Return ONLY valid JSON." },
                     { role: "user", content: promptText }
                 ],
                 response_format: { "type": "json_object" }
             })
         });
 
-        if (!groqResponse.ok) throw new Error("Groq API Analysis Error");
+        if (!groqResponse.ok) {
+            const errorBody = await groqResponse.text();
+            console.error("Groq Error Body:", errorBody);
+            throw new Error("Groq API Analysis Error");
+        }
 
         const result = await groqResponse.json();
         const ai = JSON.parse(result.choices[0].message.content);
 
-        // --- ЕТАП 3: СИНХРОНІЗАЦІЯ З SUPABASE ---
+        // --- STEP 3: SYNC TO SUPABASE ---
         const { error } = await sb.from('companies').update({
             ai_strategic_summary: ai.summary,
-            revenue_tier: ai.revenue,
-			revenue: ai.revenue_exact, 
-    		employee: ai.employees,    
-    		segment: ai.segment,
+            revenue_tier: ai.revenue_tier,
+            revenue: ai.revenue_exact, // Mapping to your new column
+            employee: ai.employees,    // Mapping to your new column
+            segment: ai.segment,       // Mapping to your new column
             ebitda: ai.ebitda,
             t: ai.type,
             er: ai.role,
@@ -1012,33 +989,24 @@ async function runAdvancedAnalysis(index) {
 
         if (error) throw error;
 
-        // --- ЕТАП 4: ОНОВЛЕННЯ ЛОКАЛЬНИХ ДАНИХ ТА ІНТЕРФЕЙСУ ---
-        companies[index] = { 
-            ...co, 
-            ...ai, 
-            ai_strategic_summary: ai.summary, 
-            revenue_tier: ai.revenue, 
-            growth_rate: ai.growth 
-        };
+        // --- STEP 4: UI UPDATE ---
+        companies[index] = { ...co, ...ai, ai_strategic_summary: ai.summary, revenue_tier: ai.revenue_tier, revenue: ai.revenue_exact, employee: ai.employees, segment: ai.segment, growth_rate: ai.growth };
         
         if (display) {
             display.innerText = ai.summary;
-            display.style.whiteSpace = "pre-line"; // Критично для відображення булетів у стовпчик
+            display.style.whiteSpace = "pre-line";
             display.className = "text-[10px] leading-relaxed text-slate-700 font-medium bg-white p-4 rounded-2xl border border-slate-200 shadow-sm text-left";
         }
-        
-        console.log(`✅ Financial analysis for ${co.n} completed and saved.`);
+        console.log(`✅ Success: ${co.n} updated.`);
 
     } catch (err) {
         console.error("Advanced Analysis Error:", err);
         if (display) {
-            display.innerText = `Analysis Failed: ${err.message}. Check your API keys and Internet connection.`;
+            display.innerText = `Error: ${err.message}`;
             display.className = "text-[10px] text-red-600 font-bold bg-red-50 p-4 rounded-xl border border-red-100";
         }
-        alert(`Error: ${err.message}`);
     }
 }
-
     init();
 </script>
 </body>
