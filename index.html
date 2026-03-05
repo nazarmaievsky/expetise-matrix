@@ -162,7 +162,14 @@
                     <th class="p-6 w-[22%]">Company Intelligence</th>
                     <th class="p-4 w-[18%]">Strategic Segment</th>
                     <th class="p-4 w-[10%] text-center">Size (Emp)</th>
-                    <th class="p-4 w-[12%] text-center">Financials</th>
+                    <th class="p-4 w-[12%] text-center cursor-pointer hover:bg-slate-800 transition-colors group no-print" onclick="toggleFinancialSort()">
+    <div class="flex items-center justify-center gap-1">
+        Financials 
+        <span class="text-[8px] text-slate-500">
+            ${sortDirection === 'asc' ? '▲' : sortDirection === 'desc' ? '▼' : '↕'}
+        </span>
+    </div>
+</th>
                     <th class="p-4 w-[8%] text-center">Sim %</th>
                     <th class="p-6 w-[20%]">Industry Focus</th>
                     <th class="p-6 w-[10%] text-center no-print">Edit</th>
@@ -363,6 +370,11 @@
                 <input type="text" id="formExp" class="w-full p-4 bg-blue-50 border border-blue-100 rounded-2xl font-bold text-blue-900 text-xs outline-none" placeholder="Fleet Management, Asset Tracking, AI...">
             </div>
 
+			<div class="space-y-1">
+    				<label class="text-[9px] font-black uppercase text-blue-600 ml-2 italic">Evidence & Source Links (URLs)</label>
+    			<input type="text" id="formSources" class="w-full p-4 bg-blue-50 border border-blue-100 rounded-2xl font-bold text-blue-900 text-[10px] outline-none" placeholder="https://annual-report.com, https://news-source.com">
+			</div>
+
             <div class="space-y-1">
                 <label class="text-[9px] font-black uppercase text-slate-400 ml-2">Detailed Strategic Description</label>
                 <textarea id="formDesc" rows="4" class="w-full p-4 bg-slate-50 border rounded-2xl text-xs outline-none focus:ring-2 focus:ring-slate-200" placeholder="Main description..."></textarea>
@@ -463,7 +475,32 @@ function setViewMode(mode) {
 
     let companies = [];
     let currentLookalike = "none";
+	let sortDirection = 'none'; // Стан сортування: 'none', 'asc', 'desc';
 
+	function parseFinancial(str) {
+    if (!str || str === '—' || str === '') return 0;
+    let clean = str.replace(/[$\s,]/g, '').toUpperCase();
+    let multiplier = 1;
+
+    if (clean.includes('B')) {
+        multiplier = 1000000000;
+        clean = clean.replace('B', '');
+    } else if (clean.includes('M')) {
+        multiplier = 1000000;
+        clean = clean.replace('M', '');
+    } else if (clean.includes('K')) {
+        multiplier = 1000;
+        clean = clean.replace('K', '');
+    }
+    return parseFloat(clean) * multiplier || 0;
+}
+
+	function toggleFinancialSort() {
+   	 if (sortDirection === 'none' || sortDirection === 'desc') sortDirection = 'asc';
+   	 else sortDirection = 'desc';
+   	 render();
+}
+		
     async function loadDatabase() {
         console.log("📡 Sync with Supabase...");
         const { data, error } = await sb.from('companies').select('*').order('n', { ascending: true });
@@ -548,6 +585,7 @@ function getSimilarity(co, base) {
 		document.getElementById('formRevenueExact').value = co.revenue || '';
 		document.getElementById('formEmployee').value = co.employee || '';
 		document.getElementById('formSegment').value = co.segment || '';
+		document.getElementById('formSources').value = co.sources || '';
         
         document.getElementById('formName').value = co.n || '';
         document.getElementById('formUrl').value = co.u || '';
@@ -594,6 +632,7 @@ function getSimilarity(co, base) {
 			employee: document.getElementById('formEmployee').value,
 			segment: document.getElementById('formSegment').value,
             growth_rate: document.getElementById('formGrowth').value,
+			sources: document.getElementById('formSources').value,
             ai_strategic_summary: document.getElementById('formAiSummary').value,
             sig: "Warm"
         };
@@ -700,7 +739,15 @@ function render() {
         return { ...co, originalIdx, visible: matchesSearch && matchesSegment, ssm: getSimilarity(co, baseCo) };
     });
 
-    data.sort((a, b) => b.ssm - a.ssm);
+    data.sort((a, b) => {
+        if (sortDirection !== 'none') {
+            const valA = parseFinancial(a.revenue);
+            const valB = parseFinancial(b.revenue);
+            return sortDirection === 'asc' ? valA - valB : valB - valA;
+        }
+        return b.ssm - a.ssm; // Дефолтне сортування за Sim %
+    });
+	
     body.innerHTML = '';
     let count = 0;
 
@@ -724,14 +771,17 @@ function render() {
             const row = document.createElement('tr');
             row.className = `group hover:bg-slate-50 transition-all ${co.ssm >= 70 ? 'row-lookalike' : ''}`;
             row.innerHTML = `
-                <td class="p-6">
-                    <div class="flex flex-col truncate">
-                        <a href="${co.u}" target="_blank" class="text-sm font-black uppercase tracking-tighter text-slate-800 hover:text-indigo-600 transition-all italic underline decoration-slate-200 decoration-2 underline-offset-4 truncate">${co.n}</a>
-                        <span class="text-[9px] text-slate-400 font-bold uppercase mt-1 tracking-widest">${co.r || 'GLOBAL'}</span>
-                    </div>
-                    <button onclick="toggleDetails(${co.originalIdx})" class="mt-2 text-[8px] text-indigo-500 font-black uppercase hover:underline no-print block">Summary & Research</button>
-                    <div id="details-${co.originalIdx}" class="hidden mt-3"></div>
-                </td>
+<td class="p-6">
+    <div class="flex flex-col truncate">
+        <a href="${co.u}" target="_blank" class="text-sm font-black uppercase tracking-tighter text-slate-800 hover:text-indigo-600 transition-all italic underline decoration-slate-200 decoration-2 underline-offset-4 truncate">${co.n}</a>
+        <span class="text-[9px] text-slate-400 font-bold uppercase mt-1 tracking-widest">${co.r || 'GLOBAL'}</span>
+    </div>
+    <div class="flex gap-3 mt-2">
+        <button onclick="toggleDetails(${co.originalIdx})" class="text-[8px] text-indigo-500 font-black uppercase hover:underline no-print">Summary</button>
+        ${co.sources ? `<a href="${co.sources.split(',')[0].trim()}" target="_blank" class="text-[8px] text-emerald-600 font-black uppercase hover:underline no-print">🔗 Source</a>` : ''}
+    </div>
+    <div id="details-${co.originalIdx}" class="hidden mt-3"></div>
+</td>
                 <td class="p-4">
                     <div class="text-[10px] font-black text-indigo-900 bg-indigo-50/50 px-3 py-2 rounded-xl border border-indigo-100 uppercase italic leading-tight text-center break-words">
                         ${co.segment || 'Other / Tech'}
@@ -838,6 +888,7 @@ function toggleDetails(index) {
             Platform & Data Backbone: Logistics Orchestration (FMS/TMS), Industrial IoT, AI-Driven Logistics.
 
 			Always categorize the company into one of the clusters. Format the 'segment' field as 'Cluster: Sub-segment' (e.g., 'Asset Producers: Smart Trailer').
+			Always find and include the primary URL source for financial data in the 'sources' field.
             
             SOURCES:
             1. STRATEGIC BASE (Priority): ${existingKnowledge}
@@ -862,6 +913,7 @@ function toggleDetails(index) {
                 "hook": "Strategic entry point",
                 "expertise": "Keyword1, Keyword2",
                 "summary": "Integrated 6-point narrative",
+				"sources": "string (comma separated primary evidence URLs)"
                 "description": "Tactical analysis"
             }
         `;
@@ -905,6 +957,7 @@ function toggleDetails(index) {
         safeSet('formRevenueExact', ai.revenue_exact);
         safeSet('formEmployee', ai.employees);
         safeSet('formSegment', ai.segment);
+		safeSet('formSources', ai.sources);
 
         icon.innerText = "✅";
 
@@ -1008,6 +1061,7 @@ async function runAdvancedAnalysis(index) {
             Platform & Data Backbone: Logistics Orchestration (FMS/TMS), Industrial IoT, AI-Driven Logistics.
 			
 			Always categorize the company into one of the clusters. Format the 'segment' field as 'Cluster: Sub-segment' (e.g., 'Asset Producers: Smart Trailer').
+			Always find and include the primary URL source for financial data in the 'sources' field.
            
             Return ONLY valid JSON:
             {
@@ -1027,6 +1081,7 @@ async function runAdvancedAnalysis(index) {
                 "buy_sw": "Yes" | "No",
                 "core": "string",
                 "hook": "string"
+				"sources": "string (comma separated primary evidence URLs)"
             }
         `;
 
@@ -1056,9 +1111,10 @@ async function runAdvancedAnalysis(index) {
         const { error } = await sb.from('companies').update({
             ai_strategic_summary: ai.summary,
             revenue_tier: ai.revenue_tier,
-            revenue: ai.revenue_exact, // Mapping to your new column
-            employee: ai.employees,    // Mapping to your new column
-            segment: ai.segment,       // Mapping to your new column
+            revenue: ai.revenue_exact, 
+            employee: ai.employees,    
+            segment: ai.segment,       
+			sources: ai.sources,
             ebitda: ai.ebitda,
             t: ai.type,
             er: ai.role,
