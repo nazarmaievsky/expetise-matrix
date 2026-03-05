@@ -123,31 +123,32 @@
     </div>
     
     <div class="md:w-1/3 w-full">
-        <select id="segmentFilter" onchange="render()" 
-                class="w-full p-4 bg-slate-900 text-white border-none rounded-2xl text-[10px] font-black uppercase tracking-[0.15em] outline-none cursor-pointer hover:bg-black transition-all shadow-lg">
-            <option value="all">All Strategic Segments</option>
-            <optgroup label="Asset Producers" class="bg-slate-800">
-                <option value="Connected OEMs">Connected OEMs</option>
-                <option value="Smart Trailer">Smart Trailer & Rolling Assets</option>
-                <option value="Smart Containers">Smart Containers & Cold Chain</option>
-                <option value="Rail Freight Digitalization">Rail Freight Digitalization</option>
-            </optgroup>
-            <optgroup label="Asset Operators" class="bg-slate-800">
-                <option value="Connected Fleet Intelligence">Connected Fleet Intelligence</option>
-                <option value="Freight Intelligence">Freight Intelligence & Control Towers</option>
-                <option value="Global Freight">Global Freight & Intermodal</option>
-            </optgroup>
-            <optgroup label="Platform & Data Backbone" class="bg-slate-800">
-                <option value="Logistics Orchestration">Logistics Orchestration (FMS/TMS)</option>
-                <option value="Industrial IoT">Industrial IoT</option>
-                <option value="AI-Driven Logistics">AI-Driven Predictive Logistics</option>
-            </optgroup>
-            <optgroup label="Next-Gen" class="bg-slate-800">
-                <option value="Autonomous/ADAS">Autonomous / ADAS</option>
-                <option value="V2X">V2X & Infrastructure</option>
-            </optgroup>
-        </select>
-    </div>
+    <select id="segmentFilter" onchange="render()" 
+            class="w-full p-4 bg-slate-900 text-white border-none rounded-2xl text-[10px] font-black uppercase tracking-[0.15em] outline-none cursor-pointer hover:bg-black transition-all shadow-lg">
+        <option value="all">All Strategic Segments</option>
+        
+        <optgroup label="Asset Producers" class="bg-slate-800">
+            <option value="Asset Producers">--- ALL ASSET PRODUCERS ---</option>
+            <option value="Connected OEMs">Connected OEMs</option>
+            <option value="Smart Trailer">Smart Trailer & Rolling Assets</option>
+            <option value="Smart Containers">Smart Containers & Cold Chain</option>
+            <option value="Rail Freight Digitalization">Rail Freight Digitalization</option>
+        </optgroup>
+        
+        <optgroup label="Asset Operators" class="bg-slate-800">
+            <option value="Asset Operators">--- ALL ASSET OPERATORS ---</option>
+            <option value="Connected Fleet Intelligence">Connected Fleet Intelligence</option>
+            <option value="Freight Intelligence">Freight Intelligence & Control Towers</option>
+            <option value="Global Freight">Global Freight & Intermodal</option>
+        </optgroup>
+        
+        <optgroup label="Platform & Data Backbone" class="bg-slate-800">
+            <option value="Platform & Data Backbone">--- ALL PLATFORM & DATA ---</option>
+            <option value="Logistics Orchestration">Logistics Orchestration (FMS/TMS)</option>
+            <option value="Industrial IoT">Industrial IoT</option>
+            <option value="AI-Driven Logistics">AI-Driven Predictive Logistics</option>
+        </optgroup>
+    </select>
 </div>
 
 		<div class="flex justify-center mb-8 no-print">
@@ -647,19 +648,36 @@ function render() {
     const table = body.closest('table');
     const thead = table.querySelector('thead');
     
-    // Отримуємо значення з нових фільтрів
-    const searchQuery = document.getElementById('globalSearch') ? document.getElementById('globalSearch').value.toLowerCase() : "";
-    const fSegment = document.getElementById('segmentFilter') ? document.getElementById('segmentFilter').value : "all";
-
+    const searchQuery = document.getElementById('globalSearch')?.value.toLowerCase() || "";
+    const fSegment = document.getElementById('segmentFilter')?.value || "all";
     const baseCo = currentLookalike !== "none" ? companies.find(c => c.n === currentLookalike) : null;
-    
+
+    // Словник ієрархії для розумного фільтра
+    const macroMapping = {
+        "Asset Producers": ["Connected OEMs", "Smart Trailer", "Smart Containers", "Rail Freight Digitalization"],
+        "Asset Operators": ["Connected Fleet Intelligence", "Freight Intelligence", "Global Freight", "Intermodal"],
+        "Platform & Data Backbone": ["Logistics Orchestration", "Industrial IoT", "AI-Driven Logistics", "FMS", "TMS"],
+            };
+
     let data = companies.map((co, originalIdx) => {
-        // Логіка Smart-фільтрації
+        const coSegment = co.segment || "";
         const matchesSearch = co.n.toLowerCase().includes(searchQuery) || 
-                              (co.c || "").toLowerCase().includes(searchQuery) ||
-                              (co.segment || "").toLowerCase().includes(searchQuery);
-        
-        const matchesSegment = fSegment === 'all' || (co.segment || "").includes(fSegment);
+                              coSegment.toLowerCase().includes(searchQuery) ||
+                              (co.c || "").toLowerCase().includes(searchQuery);
+
+        // Логіка ієрархічного фільтра
+        let matchesSegment = false;
+        if (fSegment === 'all') {
+            matchesSegment = true;
+        } else if (macroMapping[fSegment]) {
+            // Якщо вибрано КЛАСТЕР (напр. "Asset Producers")
+            // Показуємо, якщо назва кластера є в сегменті АБО якщо сегмент містить будь-який під-сегмент із мапи
+            matchesSegment = coSegment.includes(fSegment) || 
+                             macroMapping[fSegment].some(sub => coSegment.includes(sub));
+        } else {
+            // Якщо вибрано конкретний під-сегмент
+            matchesSegment = coSegment.includes(fSegment);
+        }
 
         return { ...co, originalIdx, visible: matchesSearch && matchesSegment, ssm: getSimilarity(co, baseCo) };
     });
@@ -668,7 +686,7 @@ function render() {
     body.innerHTML = '';
     let count = 0;
 
-    // Diamond mode логіка залишається, але ми фокусуємося на стандартному вигляді
+    // Режим відображення
     if (viewMode === 'diamond') {
         thead.classList.add('hidden');
         table.style.display = 'block';
@@ -682,13 +700,12 @@ function render() {
     data.forEach((co) => {
         if (!co.visible) return;
         count++;
-        
         if (viewMode === 'diamond') {
-            // Код для карток Diamond залишаємо без змін (або адаптуємо за потреби)
             renderDiamondCard(co, body);
         } else {
             const row = document.createElement('tr');
             row.className = `group hover:bg-slate-50 transition-all ${co.ssm >= 70 ? 'row-lookalike' : ''}`;
+            // ... (сюди встав свій існуючий row.innerHTML для звичайної таблиці)
             row.innerHTML = `
                 <td class="p-6">
                     <div class="flex flex-col">
@@ -722,13 +739,13 @@ function render() {
                     <button onclick="openModalForEdit(${co.originalIdx})" class="p-3 bg-white border border-slate-200 rounded-2xl shadow-sm hover:bg-slate-900 hover:text-white transition-all">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                     </button>
-                </td>`;
+                </td>
+            `;
             body.appendChild(row);
         }
     });
     
-    const counterEl = document.getElementById('counter');
-    if (counterEl) counterEl.innerText = `Total Leads: ${count}`;
+    document.getElementById('counter').innerText = `Active Leads: ${count}`;
 }
 
 // Summary, Description, Reletionship button for company
@@ -799,11 +816,12 @@ function toggleDetails(index) {
             Analyze the company "${name}" based on research and existing base.
 
             STRATEGIC SEGMENT CATEGORIES:
-            - Asset Producers: Connected OEMs, Smart Trailer, Smart Containers, Rail Freight Digitalization.
-            - Asset Operators: Connected Fleet Intelligence, Freight Intelligence, Global Freight & Intermodal.
-            - Platform & Data Backbone: Logistics Orchestration (FMS/TMS), Industrial IoT, AI-Driven Logistics.
-            - Next-Gen & Future Mobility: Autonomous/ADAS, V2X, Smart Infrastructure.
+            Asset Producers: Connected OEMs, Smart Trailer, Smart Containers, Rail Freight Digitalization.
+            Asset Operators: Connected Fleet Intelligence, Freight Intelligence, Global Freight & Intermodal.
+            Platform & Data Backbone: Logistics Orchestration (FMS/TMS), Industrial IoT, AI-Driven Logistics.
 
+			Always categorize the company into one of the clusters. Format the 'segment' field as 'Cluster: Sub-segment' (e.g., 'Asset Producers: Smart Trailer').
+            
             SOURCES:
             1. STRATEGIC BASE (Priority): ${existingKnowledge}
             2. FRESH RESEARCH: ${freshResearch}
@@ -968,11 +986,12 @@ async function runAdvancedAnalysis(index) {
             FRESH DATA: ${freshData}
 
             STRATEGIC SEGMENTS (Pick ONE):
-            - Asset Producers: Connected OEMs, Smart Trailer, Smart Containers, Rail Freight Digitalization.
-            - Asset Operators: Connected Fleet Intelligence, Freight Intelligence, Global Freight & Intermodal.
-            - Platform & Data Backbone: Logistics Orchestration (FMS/TMS), Industrial IoT, AI-Driven Logistics.
-            - Next-Gen & Future Mobility: Autonomous/ADAS, V2X, Smart Infrastructure.
-
+            Asset Producers: Connected OEMs, Smart Trailer, Smart Containers, Rail Freight Digitalization.
+            Asset Operators: Connected Fleet Intelligence, Freight Intelligence, Global Freight & Intermodal.
+            Platform & Data Backbone: Logistics Orchestration (FMS/TMS), Industrial IoT, AI-Driven Logistics.
+			
+			Always categorize the company into one of the clusters. Format the 'segment' field as 'Cluster: Sub-segment' (e.g., 'Asset Producers: Smart Trailer').
+           
             Return ONLY valid JSON:
             {
                 "summary": "• Business Model: ...\\n• Financials: ...\\n• Geography: ...\\n• Ecosystem: ...\\n• Software: ...\\n• Ownership: ...\\n• Employees ...",
