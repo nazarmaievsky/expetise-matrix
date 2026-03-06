@@ -60,13 +60,13 @@
             </div>
         </header>
 
-        <details class="mb-8 bg-white rounded-[2rem] border border-blue-100 shadow-sm overflow-hidden group no-print">
+       <details class="mb-8 bg-white rounded-[2rem] border border-blue-100 shadow-sm overflow-hidden group no-print">
     <summary class="flex items-center justify-between p-6 cursor-pointer list-none hover:bg-slate-50 transition-all">
         <div class="flex items-center gap-3">
             <div class="bg-blue-900 text-white p-2 rounded-xl">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
             </div>
-            <h3 class="text-sm font-black uppercase tracking-widest text-blue-900 italic">Strategic Methodology & Legend</h3>
+            <h3 class="text-sm font-black uppercase tracking-widest text-blue-900 italic">Strategic Methodology & Sim % Logic</h3>
         </div>
         <span class="text-blue-900 transition-transform group-open:rotate-180">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
@@ -75,41 +75,56 @@
 
     <div class="p-8 pt-0 grid grid-cols-1 md:grid-cols-3 gap-8 border-t border-slate-50">
         <div>
-            <h4 class="text-[11px] font-black uppercase text-blue-900 mb-4 tracking-tighter italic">Sim % Methodology</h4>
-            <div class="bg-slate-50 p-4 rounded-2xl text-[10px] font-bold text-slate-700 space-y-1.5 italic">
-                <div class="flex justify-between"><span>SW Strategy Match (Buy SW)</span><span class="text-blue-600">+40%</span></div>
-                <div class="flex justify-between border-t border-slate-200 pt-1.5 bg-blue-50/50"><span>Business Model Identical (HW/SW/Hybrid)</span><span class="text-blue-600">+30%</span></div>
-                <div class="flex justify-between border-t border-slate-200 pt-1.5"><span>Ecosystem Role</span><span class="text-blue-600">+15%</span></div>
-                <div class="flex justify-between border-t border-slate-200 pt-1.5"><span>Market Share Alignment</span><span class="text-blue-600">+10%</span></div>
-                <div class="flex justify-between border-t border-slate-200 pt-1.5"><span>Technical Domain Overlap</span><span class="text-blue-600">+5%</span></div>
+            <h4 class="text-[11px] font-black uppercase text-blue-900 mb-4 tracking-tighter italic">Sim % Score Pillars</h4>
+            <div class="bg-slate-50 p-4 rounded-2xl text-[10px] font-bold text-slate-700 space-y-2 italic">
+                <div class="flex justify-between items-center">
+                    <span>Segment Alignment</span>
+                    <span class="text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">30%</span>
+                </div>
+                <div class="flex justify-between items-center border-t border-slate-200 pt-2">
+                    <span>Asset Scale (Large vs Small)</span>
+                    <span class="text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">30%</span>
+                </div>
+                <div class="flex justify-between items-center border-t border-slate-200 pt-2">
+                    <span>Financial Proximity</span>
+                    <span class="text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">20%</span>
+                </div>
+                <div class="flex justify-between items-center border-t border-slate-200 pt-2">
+                    <span>Human Capital Scale</span>
+                    <span class="text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">20%</span>
+                </div>
             </div>
         </div>
 
         <div>
-    <h4 class="text-[11px] font-black uppercase text-emerald-900 mb-4 tracking-tighter italic">Maturity Level Index</h4>
-    <div class="space-y-4 text-[10px] leading-relaxed">
-        <div class="flex flex-col gap-1">
-            <span class="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded font-black h-fit w-fit uppercase">Low (Turnkey Seeker)</span> 
-            <span class="italic text-slate-600"><b>High Opportunity.</b> Focus on core hardware with limited internal SW R&D. Prefers ready-to-use external solutions.</span>
+            <h4 class="text-[11px] font-black uppercase text-emerald-900 mb-4 tracking-tighter italic">Hardware Asset Scale</h4>
+            <div class="space-y-4 text-[10px] leading-relaxed">
+                <div class="flex items-start gap-3">
+                    <span class="text-lg">🏗️</span>
+                    <div>
+                        <span class="font-black uppercase text-slate-900">Large Assets</span>
+                        <p class="italic text-slate-500">Heavy hardware: Trailers, Wagons, Containers, Trucks, Reefers.</p>
+                    </div>
+                </div>
+                <div class="flex items-start gap-3 border-t border-slate-100 pt-3">
+                    <span class="text-lg">📟</span>
+                    <div>
+                        <span class="font-black uppercase text-slate-900">Components</span>
+                        <p class="italic text-slate-500">Micro-hardware: Sensors, Controllers, IoT Gateways, Telematics units.</p>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="flex flex-col gap-1">
-            <span class="bg-amber-100 text-amber-700 px-2 py-0.5 rounded font-black h-fit w-fit uppercase">Med (Strategic Partner)</span> 
-            <span class="italic text-slate-600"><b>Hybrid setup.</b> Established internal IT, but open to best-of-breed specialized modules via API integration.</span>
-        </div>
-        <div class="flex flex-col gap-1">
-            <span class="bg-slate-200 text-slate-700 px-2 py-0.5 rounded font-black h-fit w-fit uppercase">High (Innovation Driven)</span> 
-            <span class="italic text-slate-600"><b>Complex Entry.</b> Sophisticated in-house engineering. Only open to highly unique or niche value propositions.</span>
-        </div>
-    </div>
-</div>
 
         <div>
-            <h4 class="text-[11px] font-black uppercase text-purple-900 mb-4 tracking-tighter italic">Ecosystem Role Map</h4>
-            <div class="space-y-2 text-[10px] font-medium text-slate-600 italic">
-                <p><b>OEM:</b> Asset manufacturers (trailers, wagons, reefers).</p>
-                <p><b>SaaS/Platform:</b> Central fleet software & operational hubs.</p>
-                <p><b>Tech Partner:</b> Connectivity & IoT hardware/software bridges.</p>
-                <p><b>Consumer:</b> Major asset owners & logistics giants (Maersk, FedEx).</p>
+            <h4 class="text-[11px] font-black uppercase text-purple-900 mb-4 tracking-tighter italic">Benchmark Target</h4>
+            <div class="p-4 bg-purple-50 rounded-2xl border border-purple-100">
+                <p class="text-[10px] text-purple-900 font-bold italic leading-normal">
+                    Система шукає «близнюків» на основі обраної базової компанії. Пріоритет надається виробникам важкого заліза з аналогічним оборотом та штатом працівників.
+                </p>
+                <div class="mt-3 flex gap-2">
+                    <span class="bg-purple-200 text-purple-700 px-2 py-0.5 rounded text-[8px] font-black uppercase italic">Look-alike Model</span>
+                </div>
             </div>
         </div>
     </div>
@@ -476,6 +491,16 @@ function setViewMode(mode) {
     let currentLookalike = "none";
 	let sortDirection = 'none'; // Стан сортування: 'none', 'asc', 'desc';
 
+	// Перетворює "15,000" або "15K" у число. Парсер для кількості працівників
+	function parseEmployees(str) {
+    if (!str || str === '—' || str === '') return 0;
+    let clean = str.replace(/[\s,]/g, '').toUpperCase();
+    let multiplier = 1;
+    if (clean.includes('K')) { multiplier = 1000; clean = clean.replace('K', ''); }
+    return parseFloat(clean) * multiplier || 0;
+}
+
+	// Перетворює "15,000" або "15K" у число. Парсер для грошей
 	function parseFinancial(str) {
     if (!str || str === '—' || str === '') return 0;
     let clean = str.replace(/[$\s,]/g, '').toUpperCase();
@@ -552,19 +577,49 @@ function setViewMode(mode) {
 
 function getSimilarity(co, base) {
     if (!base) return 0;
-    if (co.n === base.n) return -1;
+    if (co.n === base.n) return -1; // Це базова компанія
+
     let score = 0;
-    if (co.b === base.b) score += 40; 
-    // Гнучке порівняння моделей (Hybrid дружить з HW та SaaS)
-    if (co.t === base.t) { score += 30; }
-    else if ((co.t === 'Hybrid Model' && (base.t === 'Manufactures HW' || base.t === 'SaaS/Platform')) ||
-             (base.t === 'Hybrid Model' && (co.t === 'Manufactures HW' || co.t === 'SaaS/Platform'))) {
-        score += 20; 
+
+    // 1. Схожість Сегменту (Max 30%)
+    const coSeg = co.segment || "";
+    const baseSeg = base.segment || "";
+    if (coSeg.split(':')[0] === baseSeg.split(':')[0]) {
+        score += 30; // Однаковий кластер (напр. Asset Producers)
     }
-    if (co.er === base.er) score += 15;
-    if (co.ms === base.ms) score += 10;
-    if (co.c?.split(',')[0].trim() === base.c?.split(',')[0].trim()) score += 5;
-    return score;
+
+    // 2. Масштаб Активів (Max 30%) - Large Assets vs Components
+    // Використовуємо нове поле hardware_scale АБО ключові слова як запасний варіант
+    const coScale = (co.hardware_scale || "").toLowerCase();
+    const baseScale = (base.hardware_scale || "Large Assets").toLowerCase(); // Schmitz = Large Assets
+    
+    if (coScale === baseScale && coScale !== "") {
+        score += 30;
+    } else {
+        // Пошук за ключовими словами в описі
+        const largeKeywords = ["trailer", "wagon", "truck", "container", "chassis", "reefer"];
+        const desc = (co.c + " " + co.d).toLowerCase();
+        if (largeKeywords.some(k => desc.includes(k))) score += 20;
+    }
+
+    // 3. Фінансова близькість (Max 20%)
+    const revA = parseFinancial(co.revenue);
+    const revB = parseFinancial(base.revenue);
+    if (revA > 0 && revB > 0) {
+        // Рахуємо відношення меншого до більшого (0.0 - 1.0)
+        const ratio = Math.min(revA, revB) / Math.max(revA, revB);
+        score += Math.round(ratio * 20);
+    }
+
+    // 4. Людський ресурс (Max 20%)
+    const empA = parseEmployees(co.employee);
+    const empB = parseEmployees(base.employee);
+    if (empA > 0 && empB > 0) {
+        const ratio = Math.min(empA, empB) / Math.max(empA, empB);
+        score += Math.round(ratio * 20);
+    }
+
+    return Math.min(100, score);
 }
 
     function openModalForAdd() {
