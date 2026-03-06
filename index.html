@@ -879,49 +879,55 @@ function toggleDetails(index) {
         const freshResearch = searchData.results.map(r => r.content).join('\n\n').substring(0, 15000);
 
         const promptText = `
-            Analyze the company "${name}" using the FRESH DATA provided below.
+            Analyze the company "${name}" using the provided research data.
 
-    		STRICT SOURCE RULE:
-    		Identify the EXACT deep-link URLs from the FRESH DATA where the specific financial figures (revenue, EBITDA, etc.) were found. 
-    		- PROHIBITED: Providing only the main domain (e.g., https://reuters.com).
-    		- MANDATORY: Providing the full path to the article or report (e.g., https://reuters.com/business/finance/company-results-2024-05-20/).
-    		- If multiple sources provide different data points, list all of them separated by commas.
+### 1. HARDWARE LAYER CATEGORIZATION (CRITICAL):
+Determine the scale of their physical production:
+- CATEGORY: "Large Assets" (e.g., Schmitz Cargobull, Krone, Wielton) — Manufacturers of trailers, wagons, containers, trucks, reefers, chassis.
+- CATEGORY: "Components" (e.g., Siemens, Bosch, Teltonika) — Manufacturers of sensors, controllers, IoT devices, or microelectronics.
+*Note: This distinction is vital for our similarity logic.*
 
-            STRATEGIC SEGMENT CATEGORIES:
-            Asset Producers: Connected OEMs, Smart Trailer, Smart Containers, Rail Freight Digitalization.
-            Asset Operators: Connected Fleet Intelligence, Freight Intelligence, Global Freight & Intermodal.
-            Platform & Data Backbone: Logistics Orchestration (FMS/TMS), Industrial IoT, AI-Driven Logistics.
+### 2. STRATEGIC SEGMENT HIERARCHY:
+Choose ONE cluster and its sub-segment:
+- Asset Producers: [Connected OEMs, Smart Trailer, Smart Containers, Rail Freight Digitalization]
+- Asset Operators: [Connected Fleet Intelligence, Freight Intelligence, Global Freight & Intermodal]
+- Platform & Data Backbone: [Logistics Orchestration (FMS/TMS), Industrial IoT, AI-Driven Logistics]
 
-			Always categorize the company into one of the clusters. Format the 'segment' field as 'Cluster: Sub-segment' (e.g., 'Asset Producers: Smart Trailer').
-			Always find and include the primary URL source for financial data in the 'sources' field.
-            
-            SOURCES:
-            1. STRATEGIC BASE (Priority): ${existingKnowledge}
-            2. FRESH RESEARCH: ${freshResearch}
+### 3. EVIDENCE & SOURCES RULE:
+- Identify EXACT deep-link URLs where financial figures were found.
+- PROHIBITED: Providing only main domains (e.g., reuters.com).
+- PROHIBITED: Providing placeholders like "www.example.com" or "www.source.com".
+- MANDATORY: If no exact source is found in the data, leave the "sources" field EMPTY.
 
-            Return ONLY a JSON object:
-            {
-                "type": "Manufactures HW" | "SaaS/Platform" | "Hybrid Model" | "UNKNOWN",
-                "role": "OEM" | "SaaS/Platform" | "Tech Partner" | "Consumer" | "UNKNOWN",
-                "region": "EMEA" | "AMER" | "APAC" | "GLOBAL" | "UNKNOWN",
-                "share": "Low" | "Mid" | "High" | "UNKNOWN",
-                "revenue_exact": "string (Exact revenue figure)",
-                "employees": "string (Number of employees)",
-                "segment": "Choose one from categories above",
-                "maturity": "Low" | "Med" | "High" | "UNKNOWN",
-                "own_sw": "Yes" | "No" | "UNKNOWN",
-                "buy_sw": "Yes" | "No" | "UNKNOWN",
-                "revenue": "Low" | "Mid" | "High" | "UNKNOWN",
-                "ebitda": "string",
-                "growth": "Rapid" | "Stable" | "Declining" | "UNKNOWN",
-                "core": "Primary focus areas",
-                "hook": "Strategic entry point",
-                "expertise": "Keyword1, Keyword2",
-                "summary": "Integrated 6-point narrative",
-				"sources": "string (comma separated primary evidence URLs)"
-                "description": "Tactical analysis"
-            }
-        `;
+### 4. DATA SOURCES:
+- STRATEGIC BASE: ${existingKnowledge}
+- FRESH RESEARCH: ${freshResearch}
+
+### 5. OUTPUT FORMAT (STRICT JSON ONLY):
+Return exactly this JSON structure. For "summary", use exactly 6 bullet points starting with the "•" symbol.
+
+{
+    "type": "Manufactures HW" | "SaaS/Platform" | "Hybrid Model",
+    "role": "OEM" | "SaaS/Platform" | "Tech Partner" | "Consumer",
+    "region": "EMEA" | "AMER" | "APAC" | "GLOBAL",
+    "share": "Low" | "Mid" | "High",
+    "revenue_exact": "string (Exact revenue figure, prioritize 2024-2025)",
+    "employees": "string (Number of employees)",
+    "segment": "Cluster: Sub-segment",
+    "maturity": "Low" | "Med" | "High",
+    "own_sw": "Yes" | "No",
+    "buy_sw": "Yes" | "No",
+    "revenue": "Low" | "Mid" | "High",
+    "ebitda": "string",
+    "growth": "Rapid" | "Stable" | "Declining",
+    "core": "Primary focus areas (mention if Large Assets or Components)",
+    "hook": "Strategic entry point",
+    "expertise": "Keyword1, Keyword2",
+    "summary": "• Point 1\\n• Point 2\\n• Point 3\\n• Point 4\\n• Point 5\\n• Point 6",
+    "sources": "string (EXACT DEEP LINKS ONLY, comma separated)",
+    "description": "Tactical analysis of hardware scale vs software integration"
+}
+`;
 
         const responseGroq = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
@@ -1056,45 +1062,49 @@ async function runAdvancedAnalysis(index) {
 
         // --- STEP 2: GROQ ANALYSIS ---
         const promptText = `
-            Analyze "${co.n}" using these sources:
-            BASE KNOWLEDGE: ${co.ai_strategic_summary || co.d || "None"}
-            FRESH DATA: ${freshData}
+            Analyze the company "${co.n}" to refine and sync its strategic profile.
 
-			STRICT SOURCE RULE:
-    		Identify the EXACT deep-link URLs from the FRESH DATA where the specific financial figures (revenue, EBITDA, etc.) were found. 
-    		- PROHIBITED: Providing only the main domain (e.g., https://reuters.com).
-   		 	- MANDATORY: Providing the full path to the article or report (e.g., https://reuters.com/business/finance/company-results-2024-05-20/).
-    		- If multiple sources provide different data points, list all of them separated by commas.
+    ### 1. HARDWARE SCALE CATEGORIZATION (CRITICAL FOR SIM%):
+    Identify if the company belongs to the "Hardware Layer" and at what scale:
+    - CATEGORY: "Large Assets" — Manufacturers of trailers, wagons, containers, trucks, chassis (e.g., Schmitz Cargobull, Krone).
+    - CATEGORY: "Components" — Manufacturers of sensors, controllers, IoT devices, or chips (e.g., Siemens, Bosch).
+    - If the company is pure SaaS, mark as "None".
 
-            STRATEGIC SEGMENTS (Pick ONE):
-            Asset Producers: Connected OEMs, Smart Trailer, Smart Containers, Rail Freight Digitalization.
-            Asset Operators: Connected Fleet Intelligence, Freight Intelligence, Global Freight & Intermodal.
-            Platform & Data Backbone: Logistics Orchestration (FMS/TMS), Industrial IoT, AI-Driven Logistics.
-			
-			Always categorize the company into one of the clusters. Format the 'segment' field as 'Cluster: Sub-segment' (e.g., 'Asset Producers: Smart Trailer').
-			Always find and include the primary URL source for financial data in the 'sources' field.
-           
-            Return ONLY valid JSON:
-            {
-                "summary": "• Business Model: ...\\n• Financials: ...\\n• Geography: ...\\n• Ecosystem: ...\\n• Software: ...\\n• Ownership: ...\\n• Employees ...",
-                "revenue_exact": "string (e.g. $1.2B)",
-                "employees": "string (e.g. 15,000)",
-                "segment": "One specific segment from the list above",
-                "revenue_tier": "Low" | "Mid" | "High",
-                "ebitda": "string",
-                "growth": "Rapid" | "Stable" | "Declining",
-                "type": "Manufactures HW" | "SaaS/Platform" | "Hybrid Model",
-                "role": "OEM" | "SaaS/Platform" | "Tech Partner" | "Consumer",
-                "region": "EMEA" | "AMER" | "APAC" | "GLOBAL",
-                "share": "Low" | "Mid" | "High",
-                "maturity": "Low" | "Med" | "High",
-                "own_sw": "Yes" | "No",
-                "buy_sw": "Yes" | "No",
-                "core": "string",
-                "hook": "string"
-				"sources": "string (comma separated primary evidence URLs)"
-            }
-        `;
+    ### 2. STRICT SOURCE & EVIDENCE RULE:
+    - Identify EXACT deep-link URLs from FRESH DATA for financial figures.
+    - PROHIBITED: Providing only main domains (e.g., reuters.com).
+    - PROHIBITED: Providing fake links like "example.com" or "source.com".
+    - MANDATORY: If no exact source URL is present in FRESH DATA, leave the "sources" field EMPTY ("").
+
+    ### 3. FORMATTING RULE:
+    - The "summary" field MUST contain exactly 6 bullet points using the "•" symbol.
+    - Focus bullets on: 1. Business Model, 2. Financials (2024), 3. Geography, 4. Hardware Scale, 5. Software Strategy, 6. Ownership.
+
+    ### 4. DATA CONTEXT:
+    - BASE KNOWLEDGE (Internal): ${co.ai_strategic_summary || co.d || "None"}
+    - FRESH RESEARCH (External): ${freshData}
+
+    Return ONLY a valid JSON object:
+    {
+        "summary": "• Point 1\\n• Point 2\\n• Point 3\\n• Point 4\\n• Point 5\\n• Point 6",
+        "revenue_exact": "string (Current revenue, e.g. $1.2B)",
+        "employees": "string (Exact number)",
+        "segment": "Cluster: Sub-segment (Asset Producers | Asset Operators | Platform)",
+        "revenue_tier": "Low" | "Mid" | "High",
+        "ebitda": "string",
+        "growth": "Rapid" | "Stable" | "Declining",
+        "type": "Manufactures HW" | "SaaS/Platform" | "Hybrid Model",
+        "role": "OEM" | "SaaS/Platform" | "Tech Partner" | "Consumer",
+        "region": "EMEA" | "AMER" | "APAC" | "GLOBAL",
+        "share": "Low" | "Mid" | "High",
+        "maturity": "Low" | "Med" | "High",
+        "own_sw": "Yes" | "No",
+        "buy_sw": "Yes" | "No",
+        "core": "Primary focus (mention if Large Assets or Components)",
+        "hook": "Strategic entry point",
+        "sources": "string (EXACT DEEP LINKS ONLY, comma separated)"
+    }
+`;
 
         const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
