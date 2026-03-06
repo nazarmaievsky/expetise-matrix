@@ -879,7 +879,13 @@ function toggleDetails(index) {
         const freshResearch = searchData.results.map(r => r.content).join('\n\n').substring(0, 15000);
 
         const promptText = `
-            Analyze the company "${name}" based on research and existing base.
+            Analyze the company "${name}" using the FRESH DATA provided below.
+
+    		STRICT SOURCE RULE:
+    		Identify the EXACT deep-link URLs from the FRESH DATA where the specific financial figures (revenue, EBITDA, etc.) were found. 
+    		- PROHIBITED: Providing only the main domain (e.g., https://reuters.com).
+    		- MANDATORY: Providing the full path to the article or report (e.g., https://reuters.com/business/finance/company-results-2024-05-20/).
+    		- If multiple sources provide different data points, list all of them separated by commas.
 
             STRATEGIC SEGMENT CATEGORIES:
             Asset Producers: Connected OEMs, Smart Trailer, Smart Containers, Rail Freight Digitalization.
@@ -1036,7 +1042,7 @@ async function runAdvancedAnalysis(index) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 api_key: tavilyKey,
-                query: `Detailed financials, revenue 2024-2025, EBITDA, employee count, and strategic segment for ${co.n} ${co.u}`,
+                query: `Detailed financials, revenue 2024-2026, EBITDA, employee count, and strategic segment for ${co.n} ${co.u}`,
                 search_depth: "advanced",
                 max_results: 5
             })
@@ -1053,6 +1059,12 @@ async function runAdvancedAnalysis(index) {
             Analyze "${co.n}" using these sources:
             BASE KNOWLEDGE: ${co.ai_strategic_summary || co.d || "None"}
             FRESH DATA: ${freshData}
+
+			STRICT SOURCE RULE:
+    		Identify the EXACT deep-link URLs from the FRESH DATA where the specific financial figures (revenue, EBITDA, etc.) were found. 
+    		- PROHIBITED: Providing only the main domain (e.g., https://reuters.com).
+   		 	- MANDATORY: Providing the full path to the article or report (e.g., https://reuters.com/business/finance/company-results-2024-05-20/).
+    		- If multiple sources provide different data points, list all of them separated by commas.
 
             STRATEGIC SEGMENTS (Pick ONE):
             Asset Producers: Connected OEMs, Smart Trailer, Smart Containers, Rail Freight Digitalization.
