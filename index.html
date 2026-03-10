@@ -506,20 +506,37 @@ function setViewMode(mode) {
 	// Перетворює "15,000" або "15K" у число. Парсер для грошей
 	function parseFinancial(str) {
     if (!str || str === '—' || str === '') return 0;
-    let clean = str.replace(/[$\s,]/g, '').toUpperCase();
+
+    // 1. Очищуємо рядок: прибираємо пробіли, коми, символи валют і переводимо в UPPERCASE
+    let clean = str.replace(/[€$£\s,]/g, '').toUpperCase();
     let multiplier = 1;
 
-    if (clean.includes('B')) {
+    // 2. Перевірка на Мільярди (B або BILLION)
+    if (clean.includes('BILLION') || clean.includes('BN')) {
+        multiplier = 1000000000;
+        clean = clean.replace(/BILLION|BN/g, '');
+    } else if (clean.includes('B') && !clean.includes('EB')) { // !clean.includes('EB') щоб не сплутати з EBITDA
         multiplier = 1000000000;
         clean = clean.replace('B', '');
+    } 
+
+    // 3. Перевірка на Мільйони (M або MILLION)
+    else if (clean.includes('MILLION')) {
+        multiplier = 1000000;
+        clean = clean.replace('MILLION', '');
     } else if (clean.includes('M')) {
         multiplier = 1000000;
         clean = clean.replace('M', '');
-    } else if (clean.includes('K')) {
+    }
+
+    // 4. Перевірка на Тисячі (K)
+    else if (clean.includes('K')) {
         multiplier = 1000;
         clean = clean.replace('K', '');
     }
-    return parseFloat(clean) * multiplier || 0;
+
+    const numericValue = parseFloat(clean) * multiplier;
+    return numericValue || 0;
 }
 
 	function toggleFinancialSort() {
