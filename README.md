@@ -1,4 +1,4 @@
-# 🚚 Expertise Matrix v30.2 — Strategic Intelligence Platform
+# 🚚 Expertise Matrix v30.3 — Strategic Intelligence Platform
 
 **Expertise Matrix** is a high-performance Strategic CRM and Business Intelligence tool tailored for the logistics, telematics, and rail industries. It utilizes a **RAG (Retrieval-Augmented Generation)** architecture to transform raw web data into structured financial profiles and executive strategic summaries.
 
