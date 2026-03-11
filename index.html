@@ -211,26 +211,7 @@
         <div class="mb-4 flex justify-end no-print px-4">
             <span id="counter" class="text-[10px] font-black text-blue-600 bg-blue-50 px-4 py-2 rounded-full border border-blue-200 uppercase tracking-widest italic">Active Leads: 82</span>
         </div>
-
-        <div class="bg-white rounded-[2.5rem] shadow-2xl border border-slate-200 overflow-hidden">
-            <div class="overflow-x-auto">
-<table class="w-full text-left border-collapse table-fixed min-w-[1000px]">
-    <thead class="bg-slate-900 text-slate-400 uppercase text-[9px] font-black tracking-widest">
-        <tr>
-            <th class="p-6 w-[25%]">Company Intelligence</th>
-            <th class="p-4 w-[15%]">Strategic Segment</th>
-            <th class="p-4 w-[10%] text-center">Size (Emp)</th>
-            <th class="p-4 w-[12%] text-center">Financials</th>
-            <th class="p-4 w-[8%] text-center">Sim %</th>
-            <th class="p-6 w-[20%]">Industry Focus</th>
-            <th class="p-6 w-[10%] text-center no-print">Edit</th>
-        </tr>
-    </thead>
-    <tbody id="matrixBody" class="divide-y divide-slate-100 font-medium text-sm"></tbody>
-</table>
-            </div>
-        </div>
-    </div>
+   </div>
 
 <div id="companyModal" class="modal items-center justify-center p-4">
     <div class="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-2xl overflow-hidden text-left">
@@ -241,6 +222,7 @@
 
         <form id="companyForm" class="p-8 space-y-4 max-h-[85vh] overflow-y-auto custom-scrollbar">
             <input type="hidden" id="editIndex">
+			<input type="hidden" id="formHardwareScale">
 
             <div class="grid grid-cols-2 gap-4">
                 <div class="space-y-1">
@@ -335,7 +317,7 @@
                 <div class="space-y-1">
                     <label class="text-[9px] font-black uppercase text-slate-400 ml-2">Ecosystem Role</label>
                     <select id="formRole" class="w-full p-4 bg-slate-50 border rounded-2xl text-xs font-bold outline-none">
-                        <option value="OEM">Role: OEM</option><option value="SaaS/Platform">Role: SaaS</option<option value="Tech Partner">Role: Tech/SaaS</option><option value="Consumer">Role: Consumer</option>
+                        <option value="OEM">Role: OEM</option><option value="SaaS/Platform">Role: SaaS</option<option value="Consumer">Role: Consumer</option>
                     </select>
               </div>
             </div>
@@ -683,6 +665,7 @@ function getSimilarity(co, base) {
         document.getElementById('formDesc').value = co.d || '';
         document.getElementById('formRevenue').value = co.revenue_tier || 'Mid';
         document.getElementById('formGrowth').value = co.growth_rate || 'Stable';
+		document.getElementById('formHardwareScale').value = co.hardware_scale || '';
         document.getElementById('formAiSummary').value = co.ai_strategic_summary || '';
 
         document.getElementById('companyModal').style.display = 'flex';
@@ -713,6 +696,7 @@ function getSimilarity(co, base) {
 			employee: document.getElementById('formEmployee').value,
 			segment: document.getElementById('formSegment').value,
             growth_rate: document.getElementById('formGrowth').value,
+			hardware_scale: document.getElementById('formHardwareScale').value,
 			sources: document.getElementById('formSources').value,
             ai_strategic_summary: document.getElementById('formAiSummary').value,
             sig: "Warm"
@@ -1008,7 +992,7 @@ Return exactly this JSON structure. For "summary", use exactly 6 bullet points s
     "summary": "• Point 1\\n• Point 2\\n• Point 3\\n• Point 4\\n• Point 5\\n• Point 6",
     "sources": "string (EXACT DEEP LINKS ONLY, comma separated)",
     "description": "Tactical analysis of hardware scale vs software integration",
-	"hardware_scale: ai.hardware_scale"
+	"hardware_scale": "Large Assets" | "Components" | "None"
 }
 `;
 
@@ -1051,6 +1035,7 @@ Return exactly this JSON structure. For "summary", use exactly 6 bullet points s
         safeSet('formRevenueExact', ai.revenue_exact);
         safeSet('formEmployee', ai.employees);
         safeSet('formSegment', ai.segment);
+		safeSet('formHardwareScale', ai.hardware_scale);
 		safeSet('formSources', ai.sources);
 
         icon.innerText = "✅";
@@ -1185,6 +1170,7 @@ async function runAdvancedAnalysis(index) {
         "buy_sw": "Yes" | "No",
         "core": "Primary focus (mention if Large Assets or Components)",
         "hook": "Strategic entry point",
+		"hardware_scale": "Large Assets" | "Components" | "None",
         "sources": "string (EXACT DEEP LINKS ONLY, comma separated)"
     }
 `;
