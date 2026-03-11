@@ -335,9 +335,9 @@
                 <div class="space-y-1">
                     <label class="text-[9px] font-black uppercase text-slate-400 ml-2">Ecosystem Role</label>
                     <select id="formRole" class="w-full p-4 bg-slate-50 border rounded-2xl text-xs font-bold outline-none">
-                        <option value="OEM">Role: OEM</option><option value="SaaS/Platform">Role: SaaS</option><option value="Tech Partner">Role: Tech</option><option value="Consumer">Role: Consumer</option>
+                        <option value="OEM">Role: OEM</option><option value="SaaS/Platform">Role: SaaS</option<option value="Tech Partner">Role: Tech/SaaS</option><option value="Consumer">Role: Consumer</option>
                     </select>
-                </div>
+              </div>
             </div>
 			
 			<div class="grid grid-cols-2 gap-4">
@@ -609,9 +609,21 @@ function getSimilarity(co, base) {
 
     // 1. СТРАТЕГІЧНИЙ ФІТ (Max 40%)
     // Якщо це виробник заліза (Asset Producers) - це база
-    if (coSegment.includes("asset producers")) score += 25;
+    //if (coSegment.includes("asset producers")) score += 20;
     // Якщо це саме ВЕЛИКЕ залізо (Large Assets) - ще бонус
-    if (coScale.includes("large assets")) score += 15;
+    //if (coScale.includes("large assets")) score += 20;
+
+	// 1. СТРАТЕГІЧНИЙ ТИП (Max 40%) v2
+	if (coSegment.includes("asset producers")) {
+    score += 20; // Базовий бал за приналежність до виробників
+	}
+
+	// РЕГУЛЮВАННЯ ВАГИ ЗАЛІЗА:
+	if (coScale.includes("large assets")) {
+    score += 20; // Збільшуємо бонус для Krone/Wielton (було 15)
+	} else if (coScale.includes("components")) {
+    score -= 20; // МАНУАЛЬНИЙ ШТРАФ: мінусуємо бали у Siemens/Bosch/Copeland
+	}
 
     // 2. ФІНАНСОВИЙ МАШТАБ (Max 40%) - "Мільярдний бонус"
     if (revVal >= 1000000000) { 
