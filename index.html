@@ -1228,13 +1228,14 @@ async function runAdvancedAnalysis(index) {
             b: ai.buy_sw,
             growth_rate: ai.growth,
             c: ai.core,
-            ep: ai.hook
+            ep: ai.hook,
+			hardware_scale: ai.hardware_scale,
         }).eq('id', co.id);
 
         if (error) throw error;
 
         // --- STEP 4: UI UPDATE ---
-        companies[index] = { ...co, ...ai, ai_strategic_summary: ai.summary, revenue_tier: ai.revenue_tier, revenue: ai.revenue_exact, employee: ai.employees, segment: ai.segment, growth_rate: ai.growth };
+        companies[index] = { ...co, ...ai, ai_strategic_summary: ai.summary, revenue_tier: ai.revenue_tier, revenue: ai.revenue_exact, employee: ai.employees, segment: ai.segment, growth_rate: ai.growth, hardware_scale: ai.hardware_scale };
         
         if (display) {
             display.innerText = ai.summary;
