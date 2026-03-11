@@ -1007,7 +1007,8 @@ Return exactly this JSON structure. For "summary", use exactly 6 bullet points s
     "expertise": "Keyword1, Keyword2",
     "summary": "• Point 1\\n• Point 2\\n• Point 3\\n• Point 4\\n• Point 5\\n• Point 6",
     "sources": "string (EXACT DEEP LINKS ONLY, comma separated)",
-    "description": "Tactical analysis of hardware scale vs software integration"
+    "description": "Tactical analysis of hardware scale vs software integration",
+	"hardware_scale: ai.hardware_scale"
 }
 `;
 
@@ -1229,7 +1230,7 @@ async function runAdvancedAnalysis(index) {
             growth_rate: ai.growth,
             c: ai.core,
             ep: ai.hook,
-			hardware_scale: ai.hardware_scale,
+			hardware_scale: ai.hardware_scale
         }).eq('id', co.id);
 
         if (error) throw error;
